@@ -16,4 +16,4 @@ export interface ChainAdapter {
   explorerUrl(hash: string): string;
 }
 
-export const PLATFORM_SIM_ADDRESS = "0x5e77a1B2c3D4E5f60718293A4b5C6d7E8F901234";
+export const PLATFORM_SIM_ADDRESS = "0x5e77a1b2c3d4e5f60718293a4b5c6d7e8f901234";

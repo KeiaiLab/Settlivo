@@ -28,7 +28,7 @@ export class SimulatedChain implements ChainAdapter {
       token: req.token,
       amount: req.amount,
       status: "pending",
-      calldata: buildTransferCalldata(req.to as `0x${string}`, BigInt(toUnits(req.amount)), req.memo),
+      calldata: buildTransferCalldata(req.to.toLowerCase() as `0x${string}`, BigInt(toUnits(req.amount)), req.memo),
       memo: req.memo,
       explorerUrl: this.explorerUrl(hash),
       createdAt: new Date().toISOString(),
