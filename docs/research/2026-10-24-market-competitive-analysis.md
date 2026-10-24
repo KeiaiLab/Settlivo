@@ -4,6 +4,8 @@
 - 조사 범위: 공개 자료만 사용(웹 리서치), 레포 코드(`main` @ `21214fa`)
 - 표기 규칙: 회사가 직접 발표한 수치는 **(회사 주장)**, 출처를 찾지 못한 내용은 **미확인**으로 표시했습니다. 2차 출처나 이해관계가 있는 출처(경쟁사 블로그, 비교 사이트)에 기댄 수치는 본문에 따로 밝혔습니다.
 
+> **최신 결론은 §11(글로벌 스테이블코인 급여 시스템 관점)에 있습니다.** §0~10은 초기 분석(송금·아시아 고용주 관점)이며 근거 자료로 남겨 둡니다.
+
 ---
 
 ## 0. 요약
@@ -445,3 +447,84 @@ Rise도 같은 구조(USD 입금)로 운영합니다. 2026-12 이후에는 국�
 - 디지털자산기본법 진행 상황(2026-10)
 - 국내: 모인·센트비의 블록체인 이력, 카카오페이·토스·다날의 원화 스테이블코인 계획, 은행 컨소시엄, 업비트 GIWA, 국경간 이전업 등록을 준비하는 업체
 - 해외 신규 업체(Noah, Sphere, Rain 등)의 펀딩·처리액, Visa·Mastercard·Coinbase·Airwallex의 스테이블코인 상용 출시 여부(웹 검색 한도 때문에 언론 교차검증을 하지 못함)
+
+---
+
+## 11. 최신 결론: 글로벌 스테이블코인 급여 시스템 관점
+
+전제: Settlivo는 송금 서비스가 아니라 **급여 체계를 스테이블코인화하는 글로벌 급여 시스템**입니다. 비교 대상은 Wise 같은 송금사가 아니라 Deel, Rise, Toku 같은 급여 플랫폼입니다.
+
+> 이 섹션의 조사도 일부는 웹 검색 한도 때문에 공식 사이트를 직접 확인하는 방식으로 진행했습니다. 수치 대부분은 회사가 스스로 밝힌 값입니다.
+
+### 11.1 국가별로 스테이블코인 급여가 어디까지 가능한가
+
+| 국가 | 정규직 전액 | 정규직 일부(근로자 선택) | 계약직 | 근거 |
+|---|---|---|---|---|
+| 미국 | 불가(위험) | 최저임금과 초과근무수당은 USD로 지급, 그 위 금액·보너스는 가능(주별 위험 있음) | 가능 | FLSA "cash or negotiable instrument"(29 CFR 531.27), 펜실베이니아·메릴랜드·캘리포니아 주법. 세금: 지급 시점 공정가치를 W-2에 반영 |
+| 영국 | 불명확 | 가능성 높음 | 가능 | HMRC는 현금화가 쉬운 자산(RCA)으로 보고 PAYE와 NIC를 원천징수 |
+| 독일 | 불가 | **가능**(연방노동법원 2025-04 판결, 현물급여로 인정) | 가능 | 압류가 금지되는 금액은 EUR로 지급해야 함 |
+| 프랑스·스페인·포르투갈 | 불가 | 스페인은 현물급여 30% 이내(학설), 나머지는 불확실 | 가능 | 법정통화 지급 원칙 |
+| 스위스 | 합의 시 가능(이견 있음) | 가능 | 가능 | 채무법(CO) 323b가 임의규정 |
+| UAE | 계약에 정하면 가능(두바이 1심 판례) | 가능 | 가능 | 1739/2024 판결. 다만 임금보호시스템(WPS)과 호환되는지는 미확인 |
+| 싱가포르·홍콩·일본·한국·필리핀·멕시코·브라질 | 불가 | 불가(임금 성격이 없는 보너스만 가능) | 가능 | 법정통화 지급 원칙. 한국 근로기준법 43조, 일본 노동기준법 24조 등 |
+| 아르헨티나 | 불가(USD 지급은 가능) | 회색지대(현물급여 20%) | 가능 | 노동현대화법 Ley 27.802(2026-03) |
+
+출처: [Littler](https://www.littler.com/news-analysis/dear-littler/dear-littler-paying-employees-cryptocurrency-option), [IRS FAQ](https://www.irs.gov/virtualcurrencyfaq), [HMRC CRYPTO42200](https://gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto42200), [BAG 10 AZR 80/24](https://www.haufe.de/recht/arbeits-sozialrecht/bag-kryptowaehrung-als-arbeitsentgelt-ist-zulaessig_218_647236.html), [SHRM UAE](https://shrm.org/topics-tools/employment-law-compliance/dubai-courts-confirm-salaries-are-payable-in-cryptocurrency), [MOM SG](https://www.mom.gov.sg/employment-practices/salary/paying-salary), [한국경제](https://www.hankyung.com/article/202604278970i), [Deel 가이드](https://www.deel.com/blog/stablecoin-regulations-employers-guide/)
+
+**결론**
+- **"법정화폐로 계산하고 스테이블코인으로 정산하는" 구조만 여러 나라로 확장할 수 있습니다.** 계약, 급여 계산, 원천징수, 사회보험은 현지 법정화폐로 처리하고, 실수령액 중 근로자가 동의한 일부만 스테이블코인으로 지급합니다. Deel(세후 10~25%)이 쓰는 방식입니다.
+- **"스테이블코인으로 계약하고 계산하는" 구조는 계약자에게만 사실상 자유롭습니다.** 정규직은 UAE와 스위스 정도만 가능합니다.
+- 세금은 모든 나라에서 **지급 시점의 공정가치를 법정화폐로 환산**해서 신고합니다. 그래서 급여 엔진은 지급 건마다 가격 출처와 시각을 기록해야 합니다.
+
+### 11.2 급여 플랫폼 경쟁 현황
+
+| 플랫폼 | 스테이블코인 급여 방식 | 가격(1인당 월) |
+|---|---|---|
+| Deel | 정규직: 세후 10~25% 선택(미국·유로존, 2026-05). 계약직: 스테이블코인 수령자 1만 명 이상, DLUSD 지갑(80개국 이상), Earn 최대 약 4% | EOR $599, 계약자 $49, COR $325 |
+| Rise | 회사는 USD·USDC·USDT로 입금. 근로자는 분할 수령, 전액 스테이블코인 가능. 근무일마다 지급(Daily Pay), Rise Earn(Aave 기반) | EOR $399, 계약자 $49, AOR $299 |
+| Toku | 법정화폐·스테이블코인·토큰 혼합. 토큰 베스팅과 원천징수 처리. Paxos Amplify 이자. 급여 선지급(EWA)은 Pact와 발표 | 계약자 $19부터, EOR $599부터(디렉터리 자료) |
+| Remote | 계약자만 USDC(Stripe 경유, USD로 청구받는 기업만) | 계약자 $29/$99, EOR $599 |
+| Papaya | Banco Wallet(2026-01, Fireblocks 기반), 180개국 이상 | 견적 |
+| Rippling, Oyster, Multiplier | 스테이블코인 기능 없음 또는 미확인 | — |
+
+**결론:** "스테이블코인으로 급여를 준다"는 이미 기본 기능이 됐습니다. 근로자 이자와 지갑도 Deel·Rise·Toku가 2026년에 모두 출시했습니다.
+
+### 11.3 스테이블코인이라서 가능한 급여 기능: 수요 검증
+
+| 기능 | 판단 | 근거 |
+|---|---|---|
+| 스트리밍 급여(초 단위 지급) | **수요 없음, 반증됨** | Sablier가 2026-07 유지보수 모드에 들어감. CEO 발언: "벤처 규모 사업이 없다, 수요를 과대평가했다". Superfluid TVL은 고점 대비 -93%($74.8M → $5.45M). 일반 기업 사례는 미확인 |
+| 근로자 이자·지갑 | **이미 포화** | Deel DLUSD Earn, Rise Earn, Toku Paxos Amplify(2026-03~08 출시) |
+| **국경 간 급여 선지급(EWA)** | **비어 있음, 가장 유력** | 법정화폐 EWA는 연 약 $9B 시장, DailyPay 근로자 600만 명. CFPB 2025-12 의견으로 규제 부담 완화. Deel·Rise·Remote·Papaya는 미제공 |
+| 급여 기반 소액 신용 | 조건부 | Pact Labs(Tether 주도 $7M 투자, 2026-07). 대출 라이선스와 해외 추심이 위험 요소 |
+| 이동 가능한 소득 증명 | 약함 | 운영 중인 제품은 없음. 다만 꼭 온체인일 필요가 없어 PDF나 API로도 대체 가능 |
+| 조건부·마일스톤 지급 | 약함 | 토큰 베스팅 외에 일반 기업 수요 데이터 없음 |
+
+EWA 반증: Toku×Pact(2025-09 발표)와 Pact Labs가 이미 진입 중입니다. 월급제 해외 계약자에게 수요가 있는지는 미확인이고, 선지급 재원이 필요하며, 국가별 대부업 규제가 적용될 수 있습니다.
+
+출처: [Sablier](https://blog.sablier.com/sablier-labs-is-entering-maintenance-mode), [Superfluid DefiLlama](https://defillama.com/protocol/693), [CFPB EWA](https://www.klgates.com/To-Z-or-Not-to-Z-CFPB-Clarifies-the-Regulation-Z-Treatment-of-Certain-Earned-Wage-Access-Products-1-12-2026), [Pact Labs](https://pulse2.com/pact-labs-tether-backs-startup-to-put-digital-dollars-in-every-american-paycheck/), [Deel DLUSD](https://thedefiant.io/news/tradfi-and-fintech/deel-dlusd-stablecoin-wallet-80-countries), [Toku×Paxos](https://www.paxoslabs.com/posts/every-paycheck-productive-from-day-one)
+
+### 11.4 MVP 범위
+
+**직접 만들 것**
+1. 계약자 급여 운영 전체: 온보딩, KYC/KYB, 계약서 템플릿, 인보이스, 승인, 정기·수시 지급
+2. 스테이블코인 입금과 지급 경로: 회사 입금(USDC·USDT·법정화폐), 근로자 분할 수령, 지갑 검증, 재시도와 장부 대조
+3. 세금 서류: W-9/1099-NEC, W-8BEN 수집과 발급. **지급 시점 공정가치와 가격 출처를 기록**
+4. 원장과 감사 추적: 급여 건과 tx 해시를 1:1로 연결, 회계 내보내기
+5. 컴플라이언스: 제재 대상 스크리닝, 트래블룰, 라이선스 파트너 구조
+6. 상세 급여명세서와 지급 확인서: Deel이 "내역 부족"으로 비판받는 부분
+7. API와 웹훅
+
+**파트너로 대체할 것**
+- EOR(정규직 대리고용): Deel Embedded API, Remote Embedded API
+- 미국 급여세: Check, Symmetry
+- 해외 급여세와 사회보험: EOR 파트너
+- 온·오프램프: Bridge, BVNK, Fireblocks
+- 오분류 보험: 나중에
+
+### 11.5 진입 순서
+
+1. **계약자 급여**를 먼저 합니다. 전 세계 어디서나 스테이블코인 계약과 지급이 자유롭고 수요가 큽니다. 수령 측은 필리핀처럼 오프램프가 쉬운 나라부터 시작합니다.
+2. **정규직은 선택형 일부 지급**으로 합니다. 미국, 영국, 독일, 유로존에서 EOR 파트너와 결합합니다.
+3. **크립토 친화 허브의 정규직**으로 넓힙니다. UAE와 스위스입니다.
+4. 한국, 일본, 싱가포르, 홍콩의 정규직은 후순위입니다. 이 지역은 계약자와 임금 성격이 없는 보너스로만 접근합니다.
