@@ -46,12 +46,18 @@ Next.js (App Router) · shadcn/ui · Upstash Redis (Vercel Marketplace) · Verce
 | `SCHEDULER` | `workflow` \| `tick` | `workflow` |
 | `SEED_SECRET` | any string; protects `POST /api/seed` | — |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | from the Upstash integration | — |
+| `FX_API_URL` | keyless FX endpoint returning `{ rates }` per 1 USD | open.er-api.com |
+| `SIM_CONFIRM_MS` | simulated chain confirmation delay (ms) | random 2–5 s |
+| `BASE_SEPOLIA_RPC_URL`, `PLATFORM_PRIVATE_KEY`, `USDC_ADDRESS` | testnet mode only | — |
 
 ## Run locally
 
 ```bash
 npm install
 cp .env.example .env.local   # fill Upstash vars (vercel env pull .env.local)
+npm run seed                 # flush + seed demo data into Redis
 npm run dev
-npm test
+npm test && npm run typecheck && npm run build
 ```
+
+Contributor rules live in [AGENTS.md](AGENTS.md).

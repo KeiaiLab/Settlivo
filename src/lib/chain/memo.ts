@@ -10,7 +10,7 @@ export interface Memo {
 const MARKER = "SETTLIVO|";
 const TRANSFER_CALLDATA_HEX_LEN = 2 + 68 * 2; // "0x" + selector(4) + to(32) + amount(32)
 
-export type HashableInvoice = Pick<
+type HashableInvoice = Pick<
   Invoice,
   "id" | "orgId" | "workerId" | "amount" | "currency" | "scheduledAt" | "memo"
 >;
@@ -29,7 +29,7 @@ export function invoiceHash(inv: HashableInvoice): string {
   return createHash("sha256").update(canonical).digest("hex");
 }
 
-export function encodeMemo(m: Memo): Hex {
+function encodeMemo(m: Memo): Hex {
   const bytes = Buffer.from(`${MARKER}${m.invoiceId}|${m.invoiceHash}`, "utf8");
   return `0x${bytes.toString("hex")}`;
 }

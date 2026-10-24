@@ -3,7 +3,7 @@ import { FALLBACK_RATES } from "./fallback";
 
 const DEFAULT_URL = "https://open.er-api.com/v6/latest/USD";
 
-export interface GetRatesOptions {
+interface GetRatesOptions {
   fetchImpl?: typeof fetch;
   /** Apply ±0.3% random drift to non-USD rates (simulated send-time movement). */
   drift?: boolean;

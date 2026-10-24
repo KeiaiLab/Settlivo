@@ -259,7 +259,8 @@ Routes (all under one app):
 - `/company/invoices/[id]` — status timeline, FX comparison, on-chain
   record card, retry button on failure.
 - `/company/payroll` — Payroll Run builder; `/company/payroll/[runId]`.
-- `/company/workers/[id]` — worker profile, payout prefs, history.
+- `/company/workers` — worker list with KYC, payout type, settlement count;
+  `/company/workers/[id]` — worker profile, payout prefs, history.
 - `/company/approvals` — pending payout-pref changes and worker-initiated
   invoices.
 - `/worker` — balance (USDC + local equivalent), "Needs your approval",
@@ -273,6 +274,10 @@ Routes (all under one app):
   (hash, block, from/to, amount, gas, decoded calldata with the Settlivo
   memo).
 - `/notifications` — full list for the current persona.
+- `POST /api/invoices/[id]/approve` — approval endpoint (also the Next.js
+  entrypoint that makes the Workflow builder discover `invoiceWorkflow`).
+- `GET /api/tick` — polled by the client every 3 s: settles due invoices in
+  `tick` mode and completes withdrawals older than 8 s.
 
 Worker routes are responsive down to 375 px. Company routes target desktop
 but must not break on tablet widths.
@@ -331,9 +336,9 @@ SEED_SECRET                        protects /api/seed
 # testnet only
 BASE_SEPOLIA_RPC_URL
 PLATFORM_PRIVATE_KEY
-WORKER_WALLET_MNEMONIC
 USDC_ADDRESS                        Base Sepolia USDC
 FX_API_URL                          optional override
+SIM_CONFIRM_MS                      simulated only, confirmation delay ms
 ```
 
 ## 11. Timeline (2026-10-24)

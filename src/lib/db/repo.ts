@@ -23,20 +23,12 @@ async function getMany<T>(keys: string[]): Promise<T[]> {
 
 // ---- Orgs
 export const getOrg = (id: string) => getRedis().get<Org>(`org:${id}`);
-export async function listOrgs(): Promise<Org[]> {
-  const ids = await getRedis().smembers("orgs");
-  return (await getMany<Org>(ids.map((i) => `org:${i}`))).sort((a, b) => a.name.localeCompare(b.name));
-}
 export async function putOrg(org: Org) {
   await Promise.all([getRedis().set(`org:${org.id}`, org), getRedis().sadd("orgs", org.id)]);
 }
 
 // ---- Workers
 export const getWorker = (id: string) => getRedis().get<Worker>(`worker:${id}`);
-export async function listWorkers(): Promise<Worker[]> {
-  const ids = await getRedis().smembers("workers");
-  return (await getMany<Worker>(ids.map((i) => `worker:${i}`))).sort((a, b) => a.name.localeCompare(b.name));
-}
 export async function listWorkersByOrg(orgId: string): Promise<Worker[]> {
   const ids = await getRedis().smembers(`org:${orgId}:workers`);
   return (await getMany<Worker>(ids.map((i) => `worker:${i}`))).sort((a, b) => a.name.localeCompare(b.name));
@@ -96,7 +88,6 @@ export async function putTx(tx: Tx) {
 }
 
 // ---- Withdrawals
-export const getWithdrawal = (id: string) => getRedis().get<Withdrawal>(`withdrawal:${id}`);
 export async function listWithdrawalsByWorker(workerId: string): Promise<Withdrawal[]> {
   const ids = await getRedis().smembers(`worker:${workerId}:withdrawals`);
   return (await getMany<Withdrawal>(ids.map((i) => `withdrawal:${i}`))).sort(byCreatedDesc);
