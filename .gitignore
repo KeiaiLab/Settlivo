@@ -1,40 +1,54 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# secrets — never commit; .env.example is the only template allowed
+.env*
+!.env.example
+*.pem
+*.key
+*.p12
+.vercel
+.netrc
+.npmrc
+
+# local data and scratch (JSON KV store, agent ledgers, workflow state)
+.data/
+.superpowers/
+.workflow-data*/
+.claude/settings.local.json
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-.DS_Store
-.env*
-!.env.example
-.pnp.*
-.pnpm-debug.log*
-.vercel
-.yarn/*
-*.pem
-*.tsbuildinfo
+
+# next.js / build output
 /.next/
-/.pnp
-/build
-/coverage
-/node_modules
 /out/
-# debug
-# dependencies
-# env files (can opt-in for committing if needed)
-# misc
-# next.js
-# production
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-# testing
-# typescript
-# vercel
+/build
+/.swc
 next-env.d.ts
+
+# testing
+/coverage
+playwright-report/
+test-results/
+.playwright/
+
+# typescript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-/.swc
-tsconfig.tsbuildinfo
-.data/
-playwright-report/
-test-results/
-.workflow-data*/
+.pnpm-debug.log*
+*.log
+
+# misc
+.DS_Store
