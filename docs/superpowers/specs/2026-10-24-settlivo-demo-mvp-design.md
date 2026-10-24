@@ -81,7 +81,7 @@ prefixed strings (`inv_…`, `wrk_…`, `org_…`, `tx_…`, `ntf_…`, `wd_…`
 
 ```
 org:{id}            { id, name, country, currency, kybStatus, walletAddress,
-                      usdcBalance (simulated), createdAt }
+                      usdcBalance (simulated), plan?, createdAt }
 orgs                Set<orgId>
 
 worker:{id}         { id, name, email, country, localCurrency, avatarInitials,
@@ -92,7 +92,8 @@ worker:{id}         { id, name, email, country, localCurrency, avatarInitials,
                         externalAddress?, stablecoin: USDC|USDT,
                         displayCurrency, cadence:
                         monthly|biweekly|per_invoice, bankAccount?: {…} },
-                      pendingPayoutPrefs?: same shape + submittedAt }
+                      pendingPayoutPrefs?: same shape + submittedAt,
+                      plan? }
 workers             Set<workerId>
 org:{id}:workers    Set<workerId>
 
@@ -101,7 +102,8 @@ invoice:{id}        { id, orgId, workerId, initiatedBy: company|worker,
                       status, quoteRate, executedRate, usdcAmount,
                       rateMode: spread|fixed, feeBps, lockedRate?,
                       lockExpiresAt?, appliedRate?, feeUsdc?, lockExpired?,
-                      payoutWalletId?, txId, invoiceHash, runId,
+                      payoutWalletId?, blockedReason?: kyc|plan,
+                      txId, invoiceHash, runId,
                       payrollRunId?, error?, history: [{status, at, by}],
                       createdAt }
 invoices            Set<invoiceId>
@@ -143,6 +145,13 @@ membership is `active` or `offboarding`. `org.walletAddress` is the address of
 the org's default wallet (kept so existing settlement and explorer code keeps
 working). `invoice.payoutWalletId` snapshots the worker wallet that was paid.
 
+`org.plan` / `worker.plan` = `{ tier: free|pro|business, renewsAt,
+sendsThisMonth }` is the sending account's subscription (§5.2 Plans). Accounts
+without one are Free; a plan whose `renewsAt` has passed renews with
+`sendsThisMonth = 0` the next time it is read. `invoice.blockedReason` (`kyc`
+or `plan`) marks a `scheduled` invoice the settlement step refused to send
+(§5.4).
+
 ### 4.1 Ontology
 
 Every screen and action is expressed with these entities and nothing else:
@@ -175,7 +184,10 @@ draft → pending_approval → scheduled → sending → confirmed
 ```
 
 `sending` is also blocked (stays `scheduled`, flagged `blocked_kyc`) when the
-worker's KYC status is not `verified`.
+worker's KYC status is not `verified`, and flagged `blocked_plan` when the
+sending account's plan has no sends left this month (§5.2 Plans). Both flags
+live in `invoice.blockedReason`; Retry clears either, an upgrade clears
+`blocked_plan`.
 
 ## 5. Core flows
 
@@ -222,6 +234,16 @@ worker's KYC status is not `verified`.
   fallback rates and mark `source: fallback` (shown as a subtle badge).
   In simulated mode the service also applies a ±0.3 % random drift at
   send time so the quote/executed delta is visible in the demo.
+- **Plans** (subscription on the sending account, `org.plan` /
+  `worker.plan`): the sender pays a monthly fee — **Free** $0 with 3 sends
+  per month, **Pro** $9 (individuals) and **Business** $99 (companies), both
+  unlimited; receiving is always free. USDC transfers are included on paid
+  tiers, so `feeUsdc` is `0` for spread and only the 0.6 % premium
+  (110 − 50 bps) for fixed; Free pays the per-transfer fee above. The
+  fixed-rate premium and the off-ramp fee (§5.7) stay per use on every tier.
+  `sendsThisMonth` counts confirmed settlements and resets at `renewsAt`
+  (start of the next month; an upgrade starts a 30-day period). Upgrading is
+  a simulated card checkout on `/company/billing` (§6).
 
 ### 5.3 Scenario 3 — worker chooses payout conditions, company approves
 
@@ -243,9 +265,11 @@ worker's KYC status is not `verified`.
 ```
 load invoice
 if worker.kyc.status != verified → flag blocked_kyc, notify company, stop
+if sender plan has no sends left → flag blocked_plan, notify company (invoice_blocked_plan), stop
 status = sending
 executedRate = fx.getRate(currency)                       // market
 { appliedRate, usdcAmount, feeUsdc, lockExpired } = price(invoice, executedRate)  // §5.2
+feeUsdc = planFee(sender plan, rateMode, usdcAmount)      // §5.2 Plans: 0 on paid tiers for spread
 if lockExpired → notify company (invoice_rate_lock_expired)
 wallet = worker's default active Wallet (§5.12; legacy fallback: payoutPrefs)
 tx = chain.transfer({ token: worker.payoutPrefs.stablecoin,
@@ -253,13 +277,16 @@ tx = chain.transfer({ token: worker.payoutPrefs.stablecoin,
                       memo: { invoiceId, invoiceHash } })
 await chain.waitForConfirmation(tx)
 status = confirmed, store txId, executedRate, usdcAmount, payoutWalletId
+sender plan sendsThisMonth += 1 (notify company when Free's last send is used)
 if this invoice is the worker's offboarding final settlement → membership
   offboarded (§5.11), notify both sides
 notify worker ("You received …") and company ("Settled …")
 on error → status = failed, store error, notify company
 ```
 
-Retry from the invoice detail page re-runs the settlement step.
+Retry from the invoice detail page clears any blocked flag and re-runs the
+settlement step; an upgrade (§5.2 Plans) does the same for every invoice the
+plan limit was holding.
 
 ### 5.5 Payroll Run (batch)
 
@@ -304,7 +331,8 @@ their persona. Company shows a KYB "Verified" card.
 ### 5.9 Notifications
 
 In-app bell with unread count on both roles. Events: invoice created,
-approved, rejected, scheduled, settled, failed, blocked; payout prefs
+approved, rejected, scheduled, settled, failed, blocked; plan limit reached,
+plan upgraded; payout prefs
 submitted/approved; withdrawal completed; KYC verified; worker invited,
 offboarded; wallet added; link request sent/accepted/declined; rate lock
 expired. Each notification
@@ -370,6 +398,9 @@ Routes (all under one app):
   (balance, default, add wallet, make default).
 - `/company/approvals` — pending payout-pref changes and worker-initiated
   invoices.
+- `/company/billing` — current plan, sends this month, held payouts, what
+  per-transfer billing would have cost, upgrade (simulated checkout) which
+  releases held payouts.
 - `/worker` — balance (USDC + local equivalent), "Needs your approval",
   recent settlements, withdraw CTA, KYC banner if not verified.
 - `/worker/invoices/[id]` — same detail as company view, worker actions.
@@ -397,6 +428,9 @@ A `seed` script (idempotent, `FLUSH` optional) populates:
 
 - 2 orgs, 5 workers, memberships as in §2, plus one former Nordwind worker
   (offboarded) so the lifecycle is visible.
+- Plans (§5.2): Acme is Business; Nordwind is Free with its 3 sends for the
+  month already used, so its next send holds until an upgrade; individuals
+  are Free.
 - Wallets: two per org (treasury + operations) and two for Alice (platform
   + external); one pending link request from Acme to Bob.
 - ~24 historical invoices across the last 3 months (mixed statuses, mostly
@@ -432,6 +466,8 @@ call so the presenter can restore state between rehearsals.
 - KYC not verified at send time → invoice stays `scheduled` with a
   `blocked_kyc` flag and company notification; verifying the worker and
   pressing Retry sends it.
+- Plan limit at send time → invoice stays `scheduled` with `blocked_plan`;
+  upgrading releases it, Retry also works once the month renews.
 
 ## 9. Testing
 
@@ -439,7 +475,8 @@ Unit tests (Vitest) for pure modules only:
 
 - calldata memo encode/decode round trip and hash verification;
 - FX conversion and 6-dp floor, fallback selection;
-- invoice status transitions (valid/invalid moves, KYC block).
+- invoice status transitions (valid/invalid moves, KYC block);
+- plan limits, renewal and plan-adjusted fees (§5.2 Plans).
 
 Manual end-to-end rehearsal script (kept in `docs/demo-script.md`):
 login as company → create invoice for Alice (now + 2 min) → login as Alice
@@ -447,7 +484,8 @@ login as company → create invoice for Alice (now + 2 min) → login as Alice
 back to company → run payroll for 3 workers → approve Bob's wallet change
 → switch to Nordwind → show Alice's second history → back to Acme: register
 a worker, review wallets, offboard Bob → Alice adds a wallet (§4.1, §5.11,
-§5.12).
+§5.12) → Nordwind's Free limit holds a payroll run, upgrading to Business
+releases it (§5.2 Plans).
 
 Workflow integration tests are skipped for time; the `tick` engine is the
 tested path if Workflow misbehaves.

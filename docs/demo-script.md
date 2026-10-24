@@ -23,9 +23,9 @@ curl -X POST https://settlivo.vercel.app/api/seed -H "x-seed-secret: $SEED_SECRE
 | 12 | Jordan | Eun's invoice → Retry settlement | Settles. |
 | 13 | Jordan | Org switcher → Nordwind Labs | Separate treasury, Alice appears with a second history. |
 
-## Extended walkthrough (ontology)
+## Extended walkthrough (ontology, subscription)
 
-Steps 14–17 continue from step 13 and show the entity model behind every screen — a user administers organizations that own wallets and hold memberships with workers; a worker owns wallets and answers link requests — as defined in the spec, §4.1 (ontology), §5.11 (worker lifecycle) and §5.12 (wallets).
+Steps 14–18 continue from step 13 and show the entity model behind every screen — a user administers organizations that own wallets, hold memberships with workers and carry a subscription plan; a worker owns wallets and answers link requests — as defined in the spec, §4.1 (ontology), §5.2 (plans / subscription), §5.11 (worker lifecycle) and §5.12 (wallets).
 
 | # | Persona | Do | Say / what the judge sees |
 | --- | --- | --- | --- |
@@ -33,12 +33,13 @@ Steps 14–17 continue from step 13 and show the entity model behind every scree
 | 15 | Jordan | Wallets | One card per company Jordan administers: Acme (Treasury, Operations), Nordwind (Treasury, EUR operations), balance per wallet and the default marker. Add wallet "Bonus pool" → it appears under Acme. |
 | 16 | Jordan | Workers → Bob Reyes → Final payment 10,000 PHP → Offboard | Badge *Offboarding* while the final invoice settles on-chain, then *Former*. Bob moves to "Former workers" on the list; his history stays. |
 | 17 | Alice Kim | Sign out → sign in as Alice → Settings | Wallets card: the Settlivo wallet is marked *Payout wallet*, Ledger (cold) is her external one. Add wallet "Rabby" → listed. Link requests from companies (Bob has one from Acme) are accepted or declined here. |
+| 18 | Jordan | Sign out → sign in as Jordan → Org switcher → Nordwind → Payroll → Run payroll now | Rows show *Blocked · Plan* (Free, 3 of 3 sends used). Billing → Upgrade to Business → run completes, fees 0. |
 
 ## Run it yourself
 
 ```bash
 npx playwright install chromium        # once
-npm run e2e                            # seeds .data/kv-e2e.json, starts next dev on :3100, walks all 17 steps
+npm run e2e                            # seeds .data/kv-e2e.json, starts next dev on :3100, walks all 18 steps
 PLAYWRIGHT_BASE_URL=https://settlivo.vercel.app SEED_SECRET=… npm run e2e   # same walkthrough against production (re-seeds it first)
 ```
 

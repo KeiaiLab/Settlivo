@@ -17,10 +17,10 @@ export async function NotificationBell({ recipient }: { recipient: Recipient }) 
   const unread = items.filter((n) => !n.read).length;
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="relative grid size-8 place-items-center rounded-md hover:bg-muted" aria-label="Notifications">
+      <DropdownMenuTrigger className="relative grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-surface-raised hover:text-foreground" aria-label="Notifications">
         <Bell className="size-4" />
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-emerald-500 px-1 text-[10px] font-semibold text-emerald-950">
+          <span className="absolute -right-0.5 -top-0.5 grid min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] font-semibold text-brand-foreground">
             {unread}
           </span>
         )}
@@ -37,7 +37,7 @@ export async function NotificationBell({ recipient }: { recipient: Recipient }) 
         {items.map((n) => (
           <DropdownMenuItem key={n.id} nativeButton={false} render={<Link href={n.href} />} className="flex flex-col items-start gap-0.5 py-2">
             <span className="flex w-full items-center gap-2 text-sm">
-              {!n.read && <span className="size-1.5 shrink-0 rounded-full bg-emerald-400" />}
+              {!n.read && <span className="size-1.5 shrink-0 rounded-full bg-brand" />}
               <span className="truncate">{n.title}</span>
             </span>
             <span className="line-clamp-1 text-xs text-muted-foreground">{n.body}</span>

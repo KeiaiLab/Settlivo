@@ -65,7 +65,7 @@ export function priceAtSettlement(inv: PricedInvoice, market: FxRates, nowIso: s
 }
 
 /** floor(usdcAmount × feeBps / 10000) at 6 dp, in integer micro-units so no float error creeps into money. */
-function feeFor(usdcAmount: string, feeBps: number): string {
+export function feeFor(usdcAmount: string, feeBps: number): string {
   const [whole, frac = ""] = usdcAmount.split(".");
   const units = BigInt(whole + frac.padEnd(6, "0").slice(0, 6));
   const fee = (units * BigInt(feeBps)) / 10_000n;

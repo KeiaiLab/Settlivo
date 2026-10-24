@@ -10,7 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Money } from "@/components/ui/money";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { approveWorkerInvoice, retryInvoiceAction } from "@/lib/actions/invoices";
-import { getInvoice, getTx, getWorker, listFxHistory } from "@/lib/db/repo";
+import { getInvoice, getOrg, getTx, getWorker, listFxHistory } from "@/lib/db/repo";
+import { badgeStatus } from "@/lib/domain/invoice-status";
+import { canSend, currentPlan, PLANS, remainingSends } from "@/lib/domain/plan";
 import { formatDateTime } from "@/lib/format";
 import { requireCompany } from "@/lib/session";
 
@@ -19,8 +21,13 @@ export default async function InvoiceDetail({ params }: { params: Promise<{ id: 
   const { id } = await params;
   const inv = await getInvoice(id);
   if (!inv || inv.orgId !== s.orgId) notFound();
-  const [worker, tx, history] = await Promise.all([getWorker(inv.workerId), inv.txId ? getTx(inv.txId) : null, listFxHistory(30)]);
-  const canRetry = inv.status === "failed" || (inv.status === "scheduled" && inv.blockedReason && worker?.kyc.status === "verified");
+  const [org, worker, tx, history] = await Promise.all([getOrg(s.orgId), getWorker(inv.workerId), inv.txId ? getTx(inv.txId) : null, listFxHistory(30)]);
+  const plan = currentPlan(org?.plan, new Date().toISOString());
+  const sendsLeft = remainingSends(plan);
+  const canRetry =
+    inv.status === "failed" ||
+    (inv.status === "scheduled" && inv.blockedReason === "kyc" && worker?.kyc.status === "verified") ||
+    (inv.status === "scheduled" && inv.blockedReason === "plan" && canSend(plan));
 
   return (
     <Page
@@ -28,7 +35,7 @@ export default async function InvoiceDetail({ params }: { params: Promise<{ id: 
       description={<>{worker?.name} · <Money amount={inv.amount} currency={inv.currency} /> · settle {formatDateTime(inv.scheduledAt)}</> as unknown as string}
       actions={
         <>
-          <StatusBadge status={inv.blockedReason ? "blocked" : inv.status} />
+          <StatusBadge status={badgeStatus(inv)} />
           {inv.status === "pending_approval" && inv.initiatedBy === "worker" && (
             <ApproveButtons onDecide={async (a, r) => { "use server"; await approveWorkerInvoice(id, a, r); }} />
           )}
@@ -36,6 +43,15 @@ export default async function InvoiceDetail({ params }: { params: Promise<{ id: 
         </>
       }
     >
+      {inv.blockedReason === "plan" && (
+        <p className="mb-4 rounded-md border border-orange-500/40 bg-orange-500/10 px-3 py-2 text-sm" data-testid="plan-notice">
+          {canSend(plan) ? (
+            <>Your plan has sends available again{sendsLeft !== null && <> ({sendsLeft} left this month)</>}. Retry to send this payout now.</>
+          ) : (
+            <>Held by your plan: {PLANS[plan.tier].label} allows {PLANS[plan.tier].sendsPerMonth} sends a month and all are used. <Link href="/company/billing" className="underline underline-offset-4 hover:text-foreground">Upgrade</Link> to send now, or wait until {formatDateTime(plan.renewsAt)}.</>
+          )}
+        </p>
+      )}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader><CardTitle className="text-sm">Timeline</CardTitle></CardHeader>

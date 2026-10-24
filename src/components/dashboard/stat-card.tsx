@@ -1,17 +1,15 @@
 import type { ReactNode } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 
-export function StatCard({ label, value, hint, icon }: { label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode }) {
+/**
+ * A ledger figure: the number leads, the label sits under it, no icon. `icon` stays in the signature for
+ * call-site compatibility but is not drawn — the figure is the whole point.
+ */
+export function StatCard({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode; icon?: ReactNode }) {
   return (
-    <Card>
-      <CardContent className="flex items-start justify-between gap-3 pt-5">
-        <div>
-          <div className="text-sm text-muted-foreground">{label}</div>
-          <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
-          {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
-        </div>
-        {icon && <div className="text-muted-foreground">{icon}</div>}
-      </CardContent>
-    </Card>
+    <div className="min-w-0 rounded-md border border-border bg-surface px-5 py-5">
+      <div className="text-[1.6rem] font-semibold leading-none tracking-[-0.02em] tabular-nums">{value}</div>
+      <div className="mt-3 text-sm">{label}</div>
+      {hint && <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div>}
+    </div>
   );
 }

@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Money, Usdc } from "@/components/ui/money";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { badgeStatus } from "@/lib/domain/invoice-status";
 import type { Invoice, Worker } from "@/lib/domain/types";
 import { formatDateTime } from "@/lib/format";
 
@@ -38,7 +39,7 @@ export function InvoiceTable({ invoices, workers, base, showWorker = true, compa
               <TableCell className="min-w-32"><Money amount={inv.amount} currency={inv.currency} justify /></TableCell>
               {!compact && <TableCell className="hidden min-w-32 text-muted-foreground sm:table-cell">{inv.usdcAmount ? <Usdc value={inv.usdcAmount} token={inv.stablecoin} justify /> : <span className="flex justify-end">—</span>}</TableCell>}
               <TableCell className="hidden text-muted-foreground md:table-cell">{formatDateTime(inv.scheduledAt)}</TableCell>
-              <TableCell><StatusBadge status={inv.blockedReason ? "blocked" : inv.status} /></TableCell>
+              <TableCell><StatusBadge status={badgeStatus(inv)} /></TableCell>
             </TableRow>
           );
         })}

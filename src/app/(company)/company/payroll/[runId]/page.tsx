@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { computeSavings } from "@/components/dashboard/savings-widget";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -24,10 +25,11 @@ export default async function PayrollRunPage({ params }: { params: Promise<{ run
   }
   const sv = computeSavings(confirmed);
   const status = done ? (confirmed.length === invoices.length ? "completed" : "failed") : "processing";
+  const heldByPlan = invoices.some((i) => i.blockedReason === "plan");
   return (
     <Page title="Payroll run" description={`${formatDateTime(run.createdAt)} · ${invoices.length} workers · batch settlement contract`} actions={<StatusBadge status={status} />}>
       <div className="mb-4 grid gap-4 md:grid-cols-3">
-        <StatCard label="Settled" value={`${confirmed.length} / ${invoices.length}`} hint={done ? "complete" : "settling sequentially…"} />
+        <StatCard label="Settled" value={`${confirmed.length} / ${invoices.length}`} hint={heldByPlan ? <>held by plan limit · <Link href="/company/billing" className="underline underline-offset-4 hover:text-foreground">see Billing</Link></> : done ? "complete" : "settling sequentially…"} />
         <StatCard label="Total USDC" value={<Usdc value={sv.totalUsd} />} hint="locked at send time" />
         <StatCard label="Saved vs bank wires" value={<Money amount={Math.max(0, sv.saved)} currency="USD" dp={0} />} hint={`${sv.daysSaved} business days faster`} />
       </div>

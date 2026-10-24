@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Invoice, Notification, Tx, Wallet, Worker } from "@/lib/domain/types";
 
-const db = { invoices: new Map<string, Invoice>(), workers: new Map<string, Worker>(), notifications: [] as Notification[], wallets: [] as Wallet[] };
+const db = { invoices: new Map<string, Invoice>(), workers: new Map<string, Worker>(), notifications: [] as Notification[], wallets: [] as Wallet[] , org: { id: "org_acme", name: "Acme Remote" } as { id: string; name: string; plan?: { tier: "free" | "pro" | "business"; renewsAt: string; sendsThisMonth: number } } };
 vi.mock("@/lib/db/repo", () => ({
   getInvoice: async (id: string) => db.invoices.get(id) ?? null,
   putInvoice: async (inv: Invoice) => { db.invoices.set(inv.id, inv); },
   getWorker: async (id: string) => db.workers.get(id) ?? null,
   putWorker: async (w: Worker) => { db.workers.set(w.id, w); },
   listWalletsByOwner: async () => db.wallets,
-  getOrg: async () => ({ id: "org_acme", name: "Acme Remote" }),
+  getOrg: async () => db.org,
+  putOrg: async (o: unknown) => { db.org = o as typeof db.org; },
   pushNotification: async (n: Notification) => { db.notifications.push(n); },
   putFxRates: async () => {},
   pushFxHistory: async () => {},
@@ -52,7 +53,7 @@ function invoice(over: Partial<Invoice> = {}): Invoice {
 }
 
 beforeEach(() => {
-  db.invoices.clear(); db.workers.clear(); db.notifications.length = 0; db.wallets = [];
+  db.invoices.clear(); db.workers.clear(); db.notifications.length = 0; db.wallets = []; db.org = { id: "org_acme", name: "Acme Remote" };
   vi.clearAllMocks();
   process.env.SCHEDULER = "workflow";
   const tx: Tx = { id: "tx_1", hash: "0xabc", from: "0xP", to: "0xPLATFORM", token: "USDC", amount: "1", status: "pending", calldata: "0x", memo: { invoiceId: "inv_1", invoiceHash: "" }, explorerUrl: "", createdAt: "" };
@@ -61,6 +62,22 @@ beforeEach(() => {
 });
 
 describe("settleInvoice", () => {
+  test("blocks when the sender's Free plan has no sends left, and counts a send on confirm", async () => {
+    db.org = { id: "org_acme", name: "Acme Remote", plan: { tier: "free", renewsAt: "2099-01-01T00:00:00.000Z", sendsThisMonth: 3 } };
+    db.workers.set("wrk_1", worker());
+    db.invoices.set("inv_1", invoice());
+    const blocked = await settleInvoice("inv_1");
+    expect(blocked.status).toBe("scheduled");
+    expect(blocked.blockedReason).toBe("plan");
+    expect(chain.transfer).not.toHaveBeenCalled();
+    db.org = { id: "org_acme", name: "Acme Remote", plan: { tier: "business", renewsAt: "2099-01-01T00:00:00.000Z", sendsThisMonth: 0 } };
+    db.invoices.set("inv_1", { ...invoice(), blockedReason: undefined });
+    const inv = await settleInvoice("inv_1");
+    expect(inv.status).toBe("confirmed");
+    expect(inv.feeUsdc).toBe("0.000000");
+    expect(db.org.plan?.sendsThisMonth).toBe(1);
+  });
+
   test("blocks on unverified KYC without transferring", async () => {
     db.workers.set("wrk_1", worker({ kyc: { status: "pending", steps: { identity: false, address: false, tax: false } } }));
     db.invoices.set("inv_1", invoice());

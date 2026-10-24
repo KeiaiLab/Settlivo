@@ -1,5 +1,7 @@
 import { getChain, chainMode } from "@/lib/chain";
-import { getInvoice, getWorker, listWalletsByOwner, putFxRates, putInvoice, putWorker, pushFxHistory } from "@/lib/db/repo";
+import { getInvoice, getOrg, getWorker, listWalletsByOwner, putFxRates, putInvoice, putOrg, putWorker, pushFxHistory } from "@/lib/db/repo";
+import { canSend, currentPlan, planFeeUsdc, recordSend, remainingSends, PLANS } from "@/lib/domain/plan";
+import { parseRateMode } from "@/lib/fx/pricing";
 import { completeOffboarding, membershipFor } from "@/lib/domain/membership";
 import { defaultWallet } from "@/lib/domain/wallets";
 import { transition } from "@/lib/domain/invoice-status";
@@ -41,6 +43,23 @@ export async function settleInvoice(invoiceId: string): Promise<Invoice> {
     return inv;
   }
 
+  // Roadmap stage 1: the sending account's plan must have sends left this month.
+  const org = await getOrg(inv.orgId);
+  const nowIso = new Date().toISOString();
+  const plan = currentPlan(org?.plan, nowIso);
+  if (!canSend(plan)) {
+    inv = { ...inv, blockedReason: "plan" };
+    await putInvoice(inv);
+    await notify(
+      { type: "org", id: inv.orgId },
+      "invoice_blocked_plan",
+      `Monthly send limit reached (${PLANS[plan.tier].sendsPerMonth} on ${PLANS[plan.tier].label})`,
+      `${fmtAmount(inv)} for ${worker.name} is on hold. Upgrade to keep sending this month.`,
+      "/company/billing",
+    );
+    return inv;
+  }
+
   inv = transition(inv, "sending", SYSTEM, { blockedReason: undefined });
   await putInvoice(inv);
 
@@ -61,12 +80,20 @@ export async function settleInvoice(invoiceId: string): Promise<Invoice> {
       amount: usdcAmount,
       memo: { invoiceId: inv.id, invoiceHash: inv.invoiceHash },
     });
-    inv = { ...inv, txId: tx.id, executedRate, usdcAmount, appliedRate, feeUsdc: pricing.feeUsdc, lockExpired: pricing.lockExpired || undefined, payoutWalletId: wallet.id };
+    inv = { ...inv, txId: tx.id, executedRate, usdcAmount, appliedRate, feeUsdc: planFeeUsdc(plan.tier, parseRateMode(inv.rateMode), pricing.usdcAmount), lockExpired: pricing.lockExpired || undefined, payoutWalletId: wallet.id };
     await putInvoice(inv);
 
     await chain.waitForConfirmation(tx.id);
     inv = transition(inv, "confirmed", SYSTEM);
     await putInvoice(inv);
+    if (org) {
+      const latestOrg = (await getOrg(org.id)) ?? org;
+      const counted = recordSend(currentPlan(latestOrg.plan, nowIso));
+      await putOrg({ ...latestOrg, plan: counted });
+      if (remainingSends(counted) === 0) {
+        await notify({ type: "org", id: org.id }, "invoice_blocked_plan", "Last free send of the month used", "The next payout will wait until you upgrade or the month renews.", "/company/billing");
+      }
+    }
 
     // A final settlement closes the membership (§5.11).
     const membership = membershipFor(worker, inv.orgId);

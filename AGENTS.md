@@ -36,7 +36,7 @@ and [docs/demo-script.md](docs/demo-script.md) (what judges will click).
 
 | Path | Role |
 | --- | --- |
-| `src/lib/domain` | Types, `newId()`, invoice status machine (`transition`) |
+| `src/lib/domain` | Types, `newId()`, invoice status machine (`transition`), subscription plans (`plan.ts`: tiers, monthly send limit, plan-adjusted fee) |
 | `src/lib/db` | The only module that touches storage: `getRedis()` returns Upstash or the local JSON file store (`kv.ts`, `.data/kv.json`); `repo.ts` is the API |
 | `src/lib/fx` | Live FX fetch with hardcoded fallback, 6-dp USDC conversion |
 | `src/lib/chain` | `ChainAdapter` interface; `simulated` (default) and `testnet` (viem/Base Sepolia); calldata memo codec |
@@ -107,8 +107,8 @@ a demo-critical path run `npm run e2e` (Playwright, uses `KV_MODE=file`).
 
 Invoice lifecycle (spec §5.1–5.4), payroll run (§5.5), on-chain memo
 verification (§5.6), withdraw (§5.7), KYC block + retry (§5.8), org switcher
-(§5.10), worker lifecycle and wallets (§5.11–5.12). The demo script exercises
-all of them in order.
+(§5.10), worker lifecycle and wallets (§5.11–5.12), subscription plan gate
+and Billing (§5.2 plans). The demo script exercises all of them in order.
 
 ## Known gaps
 

@@ -8,9 +8,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Money, Usdc } from "@/components/ui/money";
 import { KycBanner } from "@/components/worker/kyc-banner";
 import { approveMyInvoice } from "@/lib/actions/worker";
+import type { Invoice } from "@/lib/domain/types";
 import { formatDateTime, formatRate, formatUsdc } from "@/lib/format";
 import { workerContext } from "@/lib/queries/worker";
 import { requireWorker } from "@/lib/session";
+
+/** Sub-line under an upcoming payout: why it is waiting, or when it settles. */
+function upcomingNote(inv: Invoice, kycVerified: boolean): string {
+  if (inv.blockedReason === "plan") return "On hold: company plan limit";
+  if (inv.blockedReason) return kycVerified ? "Verified, waiting for your company to retry" : "On hold until verified";
+  if (inv.status === "sending") return "Settling now…";
+  return formatDateTime(inv.scheduledAt);
+}
 
 export default async function WorkerHome() {
   const s = await requireWorker();
@@ -56,7 +65,7 @@ export default async function WorkerHome() {
             {upcoming.map((i) => (
               <Link key={i.id} href={`/worker/invoices/${i.id}`} className="block rounded-md border px-3 py-2 hover:bg-muted/50">
                 <div className="flex justify-between"><span>{orgMap[i.orgId]?.name}</span><Money amount={i.amount} currency={i.currency} /></div>
-                <div className="text-xs text-muted-foreground">{i.blockedReason ? (worker.kyc.status === "verified" ? "Verified, waiting for your company to retry" : "On hold until verified") : i.status === "sending" ? "Settling now…" : formatDateTime(i.scheduledAt)}</div>
+                <div className="text-xs text-muted-foreground">{upcomingNote(i, worker.kyc.status === "verified")}</div>
               </Link>
             ))}
           </CardContent>

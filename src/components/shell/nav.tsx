@@ -9,19 +9,21 @@ export interface NavItem {
   label: string;
 }
 
+/** Text tabs on the header baseline; the active one carries a brand-green rule instead of a filled pill. */
 export function Nav({ items, className }: { items: NavItem[]; className?: string }) {
   const pathname = usePathname();
   return (
-    <nav className={cn("flex items-center gap-1 overflow-x-auto", className)}>
+    <nav className={cn("flex items-stretch gap-4 overflow-x-auto", className)}>
       {items.map((it) => {
         const active = pathname === it.href || (it.href !== "/company" && it.href !== "/worker" && pathname.startsWith(it.href));
         return (
           <Link
             key={it.href}
             href={it.href}
+            aria-current={active ? "page" : undefined}
             className={cn(
-              "whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-colors",
-              active ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+              "relative flex items-center whitespace-nowrap py-3 text-sm transition-colors after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-brand after:opacity-0 after:transition-opacity",
+              active ? "text-foreground after:opacity-100" : "text-muted-foreground hover:text-foreground",
             )}
           >
             {it.label}

@@ -4,6 +4,15 @@ export type Stablecoin = "USDC" | "USDT";
 
 export type KycStatus = "pending" | "verified" | "rejected";
 
+/** Subscription on the SENDING account (roadmap stage 1): the plan, not the transfer, carries the fee. */
+export type PlanTier = "free" | "pro" | "business";
+export interface Plan {
+  tier: PlanTier;
+  /** ISO; sends reset and the subscription renews here. */
+  renewsAt: string;
+  sendsThisMonth: number;
+}
+
 export interface Org {
   id: string;
   name: string;
@@ -13,6 +22,7 @@ export interface Org {
   /** Address of the default wallet (kept in sync with `defaultWalletId`, §5.12). */
   walletAddress: string;
   defaultWalletId?: string;
+  plan?: Plan;
   usdcBalance: string; // simulated, 6dp string
   createdAt: string;
 }
@@ -60,6 +70,7 @@ export interface Worker {
     verifiedAt?: string;
   };
   platformWallet: string;
+  plan?: Plan;
   payoutPrefs: PayoutPrefs;
   pendingPayoutPrefs?: PayoutPrefs & { submittedAt: string };
   createdAt: string;
@@ -92,7 +103,7 @@ export interface Invoice {
   memo: string;
   scheduledAt: string;
   status: InvoiceStatus;
-  blockedReason?: "kyc";
+  blockedReason?: "kyc" | "plan";
   quoteRate: number;
   executedRate?: number;
   usdcAmount?: string;
@@ -171,6 +182,8 @@ export type NotificationKind =
   | "invoice_failed"
   | "invoice_blocked"
   | "invoice_rate_lock_expired"
+  | "invoice_blocked_plan"
+  | "plan_upgraded"
   | "prefs_submitted"
   | "prefs_approved"
   | "prefs_rejected"

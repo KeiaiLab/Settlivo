@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import type { InvoiceStatus } from "@/lib/domain/types";
 import { cn } from "@/lib/utils";
 
-type Status = InvoiceStatus | "blocked" | "processing" | "completed" | "verified" | "pending" | "active" | "offboarding" | "former" | "accepted" | "declined";
+type Status = InvoiceStatus | "blocked" | "blocked_plan" | "processing" | "completed" | "verified" | "pending" | "active" | "offboarding" | "former" | "accepted" | "declined";
 
 const STYLES: Record<Status, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -13,6 +13,7 @@ const STYLES: Record<Status, string> = {
   rejected: "bg-rose-500/15 text-rose-300 border-rose-500/30",
   failed: "bg-rose-500/15 text-rose-300 border-rose-500/30",
   blocked: "bg-orange-500/15 text-orange-300 border-orange-500/30",
+  blocked_plan: "bg-orange-500/15 text-orange-300 border-orange-500/30",
   processing: "bg-sky-500/15 text-sky-300 border-sky-500/30 animate-pulse",
   completed: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
   verified: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
@@ -33,6 +34,7 @@ const LABELS: Record<Status, string> = {
   rejected: "Rejected",
   failed: "Failed",
   blocked: "Blocked · KYC",
+  blocked_plan: "Blocked · Plan",
   processing: "Processing",
   completed: "Completed",
   verified: "Verified",

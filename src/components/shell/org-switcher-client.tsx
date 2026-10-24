@@ -5,6 +5,7 @@ import { useTransition } from "react";
 import { switchOrg } from "@/lib/actions/session";
 import type { Org } from "@/lib/domain/types";
 
+/** Reads as part of the header wordmark ("Settlivo | Acme Remote") rather than a form control. */
 export function OrgSwitcherClient({ orgs, activeId }: { orgs: Org[]; activeId: string }) {
   const [pending, start] = useTransition();
   if (orgs.length <= 1) return <span className="text-sm text-muted-foreground">{orgs[0]?.name}</span>;
@@ -14,7 +15,7 @@ export function OrgSwitcherClient({ orgs, activeId }: { orgs: Org[]; activeId: s
         value={activeId}
         disabled={pending}
         onChange={(e) => start(() => switchOrg(e.target.value))}
-        className="h-8 appearance-none rounded-md border border-input bg-background pl-3 pr-8 text-sm"
+        className="h-8 appearance-none rounded-md border border-transparent bg-transparent pl-2 pr-7 text-sm font-medium transition-colors hover:border-border hover:bg-surface-raised focus-visible:border-ring focus-visible:outline-none"
         aria-label="Organization"
       >
         {orgs.map((o) => (
@@ -23,7 +24,7 @@ export function OrgSwitcherClient({ orgs, activeId }: { orgs: Org[]; activeId: s
           </option>
         ))}
       </select>
-      <ChevronsUpDown className="pointer-events-none absolute right-2 top-2 size-4 text-muted-foreground" />
+      <ChevronsUpDown className="pointer-events-none absolute right-1.5 top-2 size-4 text-muted-foreground" />
     </div>
   );
 }

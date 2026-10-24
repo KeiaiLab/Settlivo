@@ -221,3 +221,22 @@ test("17. Alice manages her wallets", async () => {
   await page.getByRole("button", { name: "Add wallet", exact: true }).first().click();
   await expect(page.getByText("Rabby").first()).toBeVisible({ timeout: 20_000 });
 });
+
+test("18. Nordwind hits its Free limit, upgrades, and the payroll resumes", async () => {
+  await signOut();
+  await loginAs("Jordan Lee", /\/company$/);
+  await page.getByLabel("Organization").selectOption("org_nordwind");
+  await expect(page.getByRole("heading", { name: "Nordwind Labs" })).toBeVisible({ timeout: 30_000 });
+  await page.goto("/company/payroll");
+  await page.getByRole("button", { name: "Run payroll now" }).click();
+  await page.waitForURL(/\/company\/payroll\/run_/, { timeout: 30_000 });
+  // Nordwind is Free with 3 of 3 sends used: both rows (Alice, Dana) hold until the plan changes.
+  await expect(badge("Blocked · Plan").first()).toBeVisible({ timeout: 30_000 });
+  const runUrl = new URL(page.url()).pathname;
+  await page.goto("/company/billing");
+  await expect(page.getByTestId("current-plan")).toContainText("Free");
+  await page.getByRole("button", { name: "Upgrade to Business" }).click();
+  await expect(page.getByTestId("current-plan")).toContainText("Business", { timeout: 20_000 });
+  await page.goto(runUrl);
+  await expect(headerBadge("Completed")).toBeVisible({ timeout: 90_000 });
+});

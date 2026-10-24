@@ -8,6 +8,7 @@ const ITEMS = [
   { href: "/company/invoices", label: "Invoices" },
   { href: "/company/payroll", label: "Payroll" },
   { href: "/company/wallets", label: "Wallets" },
+  { href: "/company/billing", label: "Billing" },
   { href: "/company/workers", label: "Workers" },
   { href: "/company/approvals", label: "Approvals" },
 ];

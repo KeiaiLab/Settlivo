@@ -29,7 +29,7 @@ export function InvoiceTimeline({ invoice }: { invoice: Invoice }) {
             <div className="leading-tight">
               <div className={cn("text-sm", done || active ? "text-foreground" : "text-muted-foreground")}>{step.label}</div>
               {h && <div className="text-xs text-muted-foreground">{formatDateTime(h.at)} · {h.by.replace(/^(org|worker|system):/, "")}</div>}
-              {step.key === "scheduled" && invoice.blockedReason && <div className="text-xs text-orange-300">Blocked until worker completes KYC</div>}
+              {step.key === "scheduled" && invoice.blockedReason && <div className="text-xs text-orange-300">{invoice.blockedReason === "plan" ? <>Held by the sender&apos;s plan limit</> : "Blocked until worker completes KYC"}</div>}
             </div>
           </li>
         );

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Usdc } from "@/components/ui/money";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getChain } from "@/lib/chain";
+import { badgeStatus } from "@/lib/domain/invoice-status";
 import { companyContext, thisMonth } from "@/lib/queries/company";
 import { requireCompany } from "@/lib/session";
 
@@ -66,8 +67,8 @@ export default async function CompanyHome() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               {inFlight.filter((i) => i.blockedReason).map((i) => (
-                <Link key={i.id} href={`/company/invoices/${i.id}`} className="flex items-center justify-between rounded-md border border-orange-500/30 bg-orange-500/5 px-3 py-2 hover:bg-orange-500/10">
-                  <span>{workerMap[i.workerId]?.name} · {workerMap[i.workerId]?.kyc.status === "verified" ? "verified, retry to settle" : "KYC pending"}</span><StatusBadge status="blocked" />
+                <Link key={i.id} href={i.blockedReason === "plan" ? "/company/billing" : `/company/invoices/${i.id}`} className="flex items-center justify-between rounded-md border border-orange-500/30 bg-orange-500/5 px-3 py-2 hover:bg-orange-500/10">
+                  <span>{workerMap[i.workerId]?.name} · {i.blockedReason === "plan" ? "held by plan limit" : workerMap[i.workerId]?.kyc.status === "verified" ? "verified, retry to settle" : "KYC pending"}</span><StatusBadge status={badgeStatus(i)} />
                 </Link>
               ))}
               {workers.filter((w) => w.pendingPayoutPrefs).map((w) => (

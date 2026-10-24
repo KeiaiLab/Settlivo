@@ -7,7 +7,7 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
   return (
     <main className="mx-auto flex min-h-[60vh] w-full max-w-md flex-col items-center justify-center gap-3 px-4 text-center">
       <h1 className="text-xl font-semibold tracking-tight">That didn&apos;t go through</h1>
-      <p className="text-sm text-muted-foreground">{error.message || "Service unavailable. Check the Upstash and Workflow configuration."}</p>
+      <p className="text-sm text-muted-foreground">{error.digest ? "The server declined the request, for example a missing wallet address or an unreachable service. Try again or go back." : error.message || "Service unavailable. Check the Upstash and Workflow configuration."}</p>
       <div className="flex gap-2">
         <Button onClick={reset}>Try again</Button>
         <Button variant="outline" onClick={() => history.back()}>Go back</Button>

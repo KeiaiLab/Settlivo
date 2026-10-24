@@ -26,7 +26,7 @@ export function SavingsWidget({ confirmed, period }: { confirmed: Invoice[]; per
         <div><div className="text-muted-foreground">Fees saved</div><div className="text-xl font-semibold text-emerald-300"><Money amount={Math.max(0, s.saved)} currency="USD" dp={0} /></div></div>
         <div><div className="text-muted-foreground">Days saved</div><div className="text-xl font-semibold tabular-nums text-emerald-300">{s.daysSaved}</div></div>
         <div><div className="text-muted-foreground">Avg. settlement</div><div className="text-xl font-semibold">~10 min</div></div>
-        <p className="col-span-3 text-xs text-muted-foreground">Bank baseline: ${BANK_FIXED_FEE_USD} + {(BANK_FX_SPREAD * 100).toFixed(1)}% FX spread, {BANK_DAYS} business days. Settlivo: {(SETTLIVO_FEE * 100).toFixed(1)}%.</p>
+        <p className="col-span-3 text-xs text-muted-foreground">Bank baseline: ${BANK_FIXED_FEE_USD} + {(BANK_FX_SPREAD * 100).toFixed(1)}% FX spread, {BANK_DAYS} business days. Settlivo: {(SETTLIVO_FEE * 100).toFixed(1)}%. On a paid plan, per-transfer fees are 0.</p>
       </CardContent>
     </Card>
   );

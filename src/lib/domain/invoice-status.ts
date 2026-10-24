@@ -17,6 +17,13 @@ export class InvalidTransitionError extends Error {
   }
 }
 
+/** Badge key for an invoice: a KYC- or plan-blocked `scheduled` invoice reads as blocked. */
+export function badgeStatus(inv: Pick<Invoice, "status" | "blockedReason">): InvoiceStatus | "blocked" | "blocked_plan" {
+  if (inv.blockedReason === "plan") return "blocked_plan";
+  if (inv.blockedReason) return "blocked";
+  return inv.status;
+}
+
 export function canTransition(from: InvoiceStatus, to: InvoiceStatus): boolean {
   return TRANSITIONS[from].includes(to);
 }

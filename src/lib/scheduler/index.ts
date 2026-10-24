@@ -17,7 +17,12 @@ export const approvalToken = (invoiceId: string) => `approve:${invoiceId}`;
 /** Start the durable run for an invoice (workflow mode) or do nothing (tick mode). */
 export async function scheduleInvoice(invoiceId: string): Promise<void> {
   if (schedulerMode() !== "workflow") return;
-  await start(invoiceWorkflow, [invoiceId]);
+  try {
+    await start(invoiceWorkflow, [invoiceId]);
+  } catch (err) {
+    // The invoice is already persisted; /api/tick settles anything more than 45 s overdue (§8).
+    console.warn("workflow start failed; relying on the tick safety net", err instanceof Error ? err.message : err);
+  }
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

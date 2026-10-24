@@ -18,9 +18,11 @@ export async function approvePayoutPrefs(workerId: string, approved: boolean, re
     payoutPrefs: approved ? prefs : worker.payoutPrefs,
     pendingPayoutPrefs: undefined,
   });
-  if (approved && prefs.walletId) {
+  if (approved) {
     const wallets = await listWalletsByOwner({ type: "worker", id: workerId });
-    if (wallets.some((w) => w.id === prefs.walletId)) await Promise.all(markDefault(wallets, prefs.walletId).map(putWallet));
+    const flagged = prefs.walletId && wallets.some((w) => w.id === prefs.walletId) ? markDefault(wallets, prefs.walletId) : wallets;
+    // Balances are tracked per address and token, so the wallets follow the approved stablecoin.
+    await Promise.all(flagged.filter((w, i) => w !== wallets[i] || w.token !== prefs.stablecoin).map((w) => putWallet({ ...w, token: prefs.stablecoin })));
   }
   await notify(
     { type: "worker", id: workerId },
