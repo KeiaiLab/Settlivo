@@ -30,6 +30,23 @@
 - 기업: 해외 급여 지급 업무 간소화 및 운영 비용 절감
 - 근무자: 더 빠르고 저렴하게 급여 수령
 
+## Demo
+
+- Production: https://settlivo.vercel.app (auto-deploys from `main`)
+- Walkthrough: [docs/demo-script.md](docs/demo-script.md)
+- Design spec: [docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md)
+
+## Stack
+
+Next.js (App Router) · shadcn/ui · Upstash Redis (Vercel Marketplace) · Vercel Workflow (durable scheduling) · viem (Base Sepolia USDC, optional) · Vitest
+
+| Env | Values | Default |
+| --- | --- | --- |
+| `CHAIN_MODE` | `simulated` \| `testnet` | `simulated` |
+| `SCHEDULER` | `workflow` \| `tick` | `workflow` |
+| `SEED_SECRET` | any string; protects `POST /api/seed` | — |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | from the Upstash integration | — |
+
 ## Run locally
 
 ```bash
