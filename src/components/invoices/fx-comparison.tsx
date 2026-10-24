@@ -24,7 +24,7 @@ export function FxComparison({ invoice, history }: { invoice: Invoice; history: 
             {delta === null ? "—" : `${delta > 0 ? "+" : ""}${delta.toFixed(3)}%`}
           </dd>
           <dt className="text-muted-foreground">Settled amount</dt>
-          <dd>{invoice.usdcAmount ? <Usdc value={invoice.usdcAmount} token={invoice.stablecoin} /> : <span className="text-muted-foreground">—</span>}</dd>
+          <dd>{invoice.usdcAmount ? <Usdc value={invoice.usdcAmount} token={invoice.stablecoin} exact className="font-medium" /> : <span className="text-muted-foreground">—</span>}</dd>
         </dl>
         <div className="text-xs text-muted-foreground">
           <div className="mb-1">30-day {invoice.currency}/USD</div>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { listAllInvoices, listAllWithdrawals, putWithdrawal } from "@/lib/db/repo";
 import { settleInvoice } from "@/lib/settlement/settle";
 import { notify } from "@/lib/settlement/notify";
+import { formatMoney } from "@/lib/format";
 
 
 const WITHDRAWAL_COMPLETE_MS = 8_000;
@@ -27,7 +28,7 @@ export async function GET() {
       await notify(
         { type: "worker", id: w.workerId },
         "withdrawal_completed",
-        `Withdrawal completed: ${w.localAmount.toLocaleString("en-US")} ${w.currency}`,
+        `Withdrawal completed: ${formatMoney(w.localAmount, w.currency)}`,
         `Funds sent to ${w.bankAccountMasked}.`,
         "/worker/withdraw",
       );

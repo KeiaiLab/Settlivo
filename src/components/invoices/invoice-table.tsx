@@ -5,7 +5,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import type { Invoice, Worker } from "@/lib/domain/types";
 import { formatDateTime } from "@/lib/format";
 
-export function InvoiceTable({ invoices, workers, base, showWorker = true }: { invoices: Invoice[]; workers: Record<string, Worker>; base: "/company" | "/worker"; showWorker?: boolean }) {
+/** `compact` drops the stablecoin column and tightens the memo so the table fits a dashboard card. */
+export function InvoiceTable({ invoices, workers, base, showWorker = true, compact = false }: { invoices: Invoice[]; workers: Record<string, Worker>; base: "/company" | "/worker"; showWorker?: boolean; compact?: boolean }) {
   if (invoices.length === 0) return <p className="py-10 text-center text-sm text-muted-foreground">No invoices yet.</p>;
   return (
     <Table>
@@ -14,8 +15,8 @@ export function InvoiceTable({ invoices, workers, base, showWorker = true }: { i
           {showWorker && <TableHead>Worker</TableHead>}
           <TableHead>Memo</TableHead>
           <TableHead className="text-right">Amount</TableHead>
-          <TableHead className="text-right">Stablecoin</TableHead>
-          <TableHead>Scheduled</TableHead>
+          {!compact && <TableHead className="hidden text-right sm:table-cell">Stablecoin</TableHead>}
+          <TableHead className="hidden md:table-cell">Scheduled</TableHead>
           <TableHead>Status</TableHead>
         </TableRow>
       </TableHeader>
@@ -29,12 +30,12 @@ export function InvoiceTable({ invoices, workers, base, showWorker = true }: { i
                   <Link href={`${base}/invoices/${inv.id}`} className="font-medium hover:underline">{w?.name ?? inv.workerId}</Link>
                 </TableCell>
               )}
-              <TableCell className="max-w-[220px] truncate text-muted-foreground">
+              <TableCell className={compact ? "max-w-40 truncate text-muted-foreground" : "max-w-[220px] truncate text-muted-foreground"}>
                 <Link href={`${base}/invoices/${inv.id}`}>{inv.memo}</Link>
               </TableCell>
-              <TableCell className="text-right"><Money amount={inv.amount} currency={inv.currency} /></TableCell>
-              <TableCell className="text-right text-muted-foreground">{inv.usdcAmount ? <Usdc value={inv.usdcAmount} token={inv.stablecoin} /> : "—"}</TableCell>
-              <TableCell className="text-muted-foreground">{formatDateTime(inv.scheduledAt)}</TableCell>
+              <TableCell className="min-w-32"><Money amount={inv.amount} currency={inv.currency} justify /></TableCell>
+              {!compact && <TableCell className="hidden min-w-32 text-muted-foreground sm:table-cell">{inv.usdcAmount ? <Usdc value={inv.usdcAmount} token={inv.stablecoin} justify /> : <span className="flex justify-end">—</span>}</TableCell>}
+              <TableCell className="hidden text-muted-foreground md:table-cell">{formatDateTime(inv.scheduledAt)}</TableCell>
               <TableCell><StatusBadge status={inv.blockedReason ? "blocked" : inv.status} /></TableCell>
             </TableRow>
           );

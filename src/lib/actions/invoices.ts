@@ -7,6 +7,7 @@ import { getFxRates, getOrg, getWorker, putInvoice } from "@/lib/db/repo";
 import { newId } from "@/lib/domain/ids";
 import { SUPPORTED_CURRENCIES, type Currency, type Invoice } from "@/lib/domain/types";
 import { getRates } from "@/lib/fx/rates";
+import { formatMoney } from "@/lib/format";
 import { approveInvoice, retryInvoice, scheduleInvoice } from "@/lib/scheduler";
 import { notify } from "@/lib/settlement/notify";
 import { requireCompany } from "@/lib/session";
@@ -59,7 +60,7 @@ export async function createInvoice(formData: FormData) {
   await notify(
     { type: "worker", id: workerId },
     "invoice_created",
-    `New invoice from ${org.name}: ${amount.toLocaleString("en-US")} ${currency}`,
+    `New invoice from ${org.name}: ${formatMoney(amount, currency)}`,
     `${memo} · scheduled ${new Date(scheduledAt).toLocaleString("en-US")}. Approve to receive it.`,
     `/worker/invoices/${inv.id}`,
   );

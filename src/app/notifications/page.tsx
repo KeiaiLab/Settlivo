@@ -38,7 +38,7 @@ export default async function NotificationsPage() {
       <Page title="Notifications" description={`${items.length} total`}>
         {[...groups.entries()].map(([day, list]) => (
           <section key={day} className="mb-6">
-            <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">{day}</h2>
+            <h2 className="mb-2 text-sm font-medium text-muted-foreground">{day}</h2>
             <ul className="divide-y rounded-lg border">
               {list.map((n) => (
                 <li key={n.id}>

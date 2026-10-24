@@ -1,6 +1,7 @@
 import type { FxHistoryPoint, Invoice, Notification, PayrollRun, Tx, Withdrawal, Worker } from "@/lib/domain/types";
 import { FALLBACK_RATES } from "@/lib/fx/fallback";
 import { toUsdc } from "@/lib/fx/convert";
+import { formatMoney, formatUsdc } from "@/lib/format";
 import { buildTransferCalldata, invoiceHash } from "@/lib/chain/memo";
 import { PLATFORM_SIM_ADDRESS } from "@/lib/chain/types";
 import { WORKERS, ORG_ACME, ORG_NORDWIND } from "./personas";
@@ -178,18 +179,18 @@ export function generate(): Generated {
   for (const inv of invoices.filter((i) => i.status === "confirmed").slice(0, 10)) {
     const w = byId[inv.workerId];
     notifications.push(
-      { id: `ntf_${hex(8)}`, recipient: { type: "worker", id: w.id }, kind: "invoice_settled", title: `You received ${inv.usdcAmount} ${inv.stablecoin}`, body: `${inv.amount.toLocaleString("en-US")} ${inv.currency} settled on-chain.`, href: `/worker/invoices/${inv.id}`, read: n++ > 2, createdAt: inv.history.at(-1)!.at },
-      { id: `ntf_${hex(8)}`, recipient: { type: "org", id: inv.orgId }, kind: "invoice_settled", title: `Settled ${inv.usdcAmount} ${inv.stablecoin} to ${w.name}`, body: `${inv.amount.toLocaleString("en-US")} ${inv.currency} confirmed on-chain.`, href: `/company/invoices/${inv.id}`, read: n > 4, createdAt: inv.history.at(-1)!.at },
+      { id: `ntf_${hex(8)}`, recipient: { type: "worker", id: w.id }, kind: "invoice_settled", title: `You received ${formatUsdc(inv.usdcAmount!, inv.stablecoin)}`, body: `${formatMoney(inv.amount, inv.currency)} settled on-chain.`, href: `/worker/invoices/${inv.id}`, read: n++ > 2, createdAt: inv.history.at(-1)!.at },
+      { id: `ntf_${hex(8)}`, recipient: { type: "org", id: inv.orgId }, kind: "invoice_settled", title: `Settled ${formatUsdc(inv.usdcAmount!, inv.stablecoin)} to ${w.name}`, body: `${formatMoney(inv.amount, inv.currency)} confirmed on-chain.`, href: `/company/invoices/${inv.id}`, read: n > 4, createdAt: inv.history.at(-1)!.at },
     );
   }
   const pending = invoices.find((i) => i.status === "pending_approval")!;
   const blocked = invoices.find((i) => i.blockedReason)!;
   notifications.push(
-    { id: `ntf_${hex(8)}`, recipient: { type: "org", id: ORG_ACME }, kind: "invoice_created", title: "Payment request from Carlos Mendes", body: "2,400 BRL · Overtime: release weekend", href: `/company/approvals`, read: false, createdAt: pending.createdAt },
+    { id: `ntf_${hex(8)}`, recipient: { type: "org", id: ORG_ACME }, kind: "invoice_created", title: "Payment request from Carlos Mendes", body: `${formatMoney(pending.amount, pending.currency)} · ${pending.memo}`, href: `/company/approvals`, read: false, createdAt: pending.createdAt },
     { id: `ntf_${hex(8)}`, recipient: { type: "org", id: ORG_ACME }, kind: "prefs_submitted", title: "Bob Reyes changed payout settings", body: "External wallet → Settlivo wallet, USDT → USDC", href: `/company/approvals`, read: false, createdAt: byId.wrk_bob.pendingPayoutPrefs!.submittedAt },
     { id: `ntf_${hex(8)}`, recipient: { type: "org", id: ORG_ACME }, kind: "invoice_blocked", title: "Payout blocked: verification pending", body: "Eun Nguyen's salary is waiting for KYC verification.", href: `/company/invoices/${blocked.id}`, read: false, createdAt: blocked.history.at(-1)!.at },
-    { id: `ntf_${hex(8)}`, recipient: { type: "worker", id: "wrk_eun" }, kind: "invoice_scheduled", title: "Complete verification to receive 38,000,000 VND", body: "Your first salary is scheduled. Finish KYC to unlock it.", href: `/worker/onboarding`, read: false, createdAt: blocked.history.at(-1)!.at },
-    ...withdrawals.map<Notification>((w) => ({ id: `ntf_${hex(8)}`, recipient: { type: "worker", id: w.workerId }, kind: "withdrawal_completed", title: `Withdrawal completed: ${w.localAmount.toLocaleString("en-US")} ${w.currency}`, body: `Funds sent to ${w.bankAccountMasked}.`, href: "/worker/withdraw", read: true, createdAt: w.completedAt! })),
+    { id: `ntf_${hex(8)}`, recipient: { type: "worker", id: "wrk_eun" }, kind: "invoice_scheduled", title: `Complete verification to receive ${formatMoney(blocked.amount, blocked.currency)}`, body: "Your first salary is scheduled. Finish KYC to unlock it.", href: `/worker/onboarding`, read: false, createdAt: blocked.history.at(-1)!.at },
+    ...withdrawals.map<Notification>((w) => ({ id: `ntf_${hex(8)}`, recipient: { type: "worker", id: w.workerId }, kind: "withdrawal_completed", title: `Withdrawal completed: ${formatMoney(w.localAmount, w.currency)}`, body: `Funds sent to ${w.bankAccountMasked}.`, href: "/worker/withdraw", read: true, createdAt: w.completedAt! })),
   );
   return { invoices, txs, payrollRuns, withdrawals, notifications };
 }

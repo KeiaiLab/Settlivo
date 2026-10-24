@@ -5,10 +5,10 @@ import { InvoiceTable } from "@/components/invoices/invoice-table";
 import { Page } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Money } from "@/components/ui/money";
+import { Money, Usdc } from "@/components/ui/money";
 import { KycBanner } from "@/components/worker/kyc-banner";
 import { approveMyInvoice } from "@/lib/actions/worker";
-import { formatDateTime, formatMoney, formatUsdc } from "@/lib/format";
+import { formatDateTime, formatRate, formatUsdc } from "@/lib/format";
 import { workerContext } from "@/lib/queries/worker";
 import { requireWorker } from "@/lib/session";
 
@@ -25,11 +25,14 @@ export default async function WorkerHome() {
     <Page title={`Hi, ${worker.name.split(" ")[0]}`} description={`${worker.country} · paid in ${worker.payoutPrefs.stablecoin} · shown in ${worker.localCurrency}`}>
       <KycBanner worker={worker} />
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="md:col-span-2 border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent">
+        <Card className="md:col-span-2 bg-emerald-500/5 ring-emerald-500/25">
           <CardHeader>
             <CardDescription>Available balance</CardDescription>
-            <CardTitle className="text-3xl tabular-nums">{formatMoney(localBalance, worker.localCurrency)}</CardTitle>
-            <CardDescription>{formatUsdc(balance, worker.payoutPrefs.stablecoin)} · {rates.rates[worker.localCurrency].toLocaleString("en-US", { maximumFractionDigits: 2 })} {worker.localCurrency}/USD {rates.source === "fallback" && "· fallback rate"}</CardDescription>
+            <CardTitle className="py-1"><Money amount={localBalance} currency={worker.localCurrency} size="hero" /></CardTitle>
+            <CardDescription className="flex flex-wrap items-baseline gap-x-1.5">
+              <Usdc value={balance} token={worker.payoutPrefs.stablecoin} className="text-foreground" />
+              <span>· {formatRate(rates.rates[worker.localCurrency], worker.localCurrency)}{rates.source === "fallback" && " · fallback rate"}</span>
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex gap-2">
             <Button nativeButton={false} render={<Link href="/worker/withdraw" />}><ArrowDownToLine /> Withdraw to {worker.localCurrency}</Button>
@@ -58,7 +61,7 @@ export default async function WorkerHome() {
               <Card key={inv.id}>
                 <CardHeader>
                   <CardTitle className="text-sm"><Link href={`/worker/invoices/${inv.id}`} className="hover:underline">{orgMap[inv.orgId]?.name}</Link> · <Money amount={inv.amount} currency={inv.currency} /></CardTitle>
-                  <CardDescription>{inv.memo} · settles {formatDateTime(inv.scheduledAt)} · ≈ {(inv.amount / inv.quoteRate).toLocaleString("en-US", { maximumFractionDigits: 2 })} {inv.stablecoin} at today&apos;s rate</CardDescription>
+                  <CardDescription>{inv.memo} · settles {formatDateTime(inv.scheduledAt)} · ≈ {formatUsdc(inv.amount / inv.quoteRate, inv.stablecoin)} at today&apos;s rate</CardDescription>
                 </CardHeader>
                 <CardContent><ApproveButtons onDecide={async (a, r) => { "use server"; await approveMyInvoice(inv.id, a, r); }} /></CardContent>
               </Card>

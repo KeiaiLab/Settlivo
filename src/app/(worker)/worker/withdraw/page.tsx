@@ -31,7 +31,7 @@ export default async function WithdrawPage() {
             {withdrawals.map((w) => (
               <div key={w.id} className="rounded-md border px-3 py-2">
                 <div className="flex items-center justify-between"><Money amount={w.localAmount} currency={w.currency} className="font-medium" /><StatusBadge status={w.status} /></div>
-                <div className="text-xs text-muted-foreground">{formatUsdc(w.usdcAmount, worker.payoutPrefs.stablecoin)} · fee {Number(w.fee).toFixed(2)} · {w.bankAccountMasked} · {formatDateTime(w.createdAt)}</div>
+                <div className="text-xs text-muted-foreground">{formatUsdc(w.usdcAmount, worker.payoutPrefs.stablecoin)} · fee {formatUsdc(w.fee, worker.payoutPrefs.stablecoin)} · {w.bankAccountMasked} · {formatDateTime(w.createdAt)}</div>
                 {w.status === "processing" && <div className="text-xs text-sky-300">Arriving {w.eta}</div>}
               </div>
             ))}

@@ -4,6 +4,7 @@ import { transition } from "@/lib/domain/invoice-status";
 import type { Invoice, Worker } from "@/lib/domain/types";
 import { toUsdc } from "@/lib/fx/convert";
 import { getRates } from "@/lib/fx/rates";
+import { formatMoney, formatRate, formatUsdc } from "@/lib/format";
 import { notify } from "./notify";
 
 const SYSTEM = "system:settlement";
@@ -14,7 +15,7 @@ function activeWallet(w: Worker): string {
     : w.platformWallet;
 }
 
-const fmtAmount = (inv: Invoice) => `${inv.amount.toLocaleString("en-US")} ${inv.currency}`;
+const fmtAmount = (inv: Invoice) => formatMoney(inv.amount, inv.currency);
 
 /** Spec §5.4. Returns the invoice in its final state for this attempt. */
 export async function settleInvoice(invoiceId: string): Promise<Invoice> {
@@ -65,14 +66,14 @@ export async function settleInvoice(invoiceId: string): Promise<Invoice> {
       notify(
         { type: "worker", id: worker.id },
         "invoice_settled",
-        `You received ${usdcAmount} ${worker.payoutPrefs.stablecoin}`,
-        `${fmtAmount(inv)} settled on-chain at ${executedRate} ${inv.currency}/USD.`,
+        `You received ${formatUsdc(usdcAmount, worker.payoutPrefs.stablecoin)}`,
+        `${fmtAmount(inv)} settled on-chain at ${formatRate(executedRate, inv.currency)}.`,
         `/worker/invoices/${inv.id}`,
       ),
       notify(
         { type: "org", id: inv.orgId },
         "invoice_settled",
-        `Settled ${usdcAmount} ${worker.payoutPrefs.stablecoin} to ${worker.name}`,
+        `Settled ${formatUsdc(usdcAmount, worker.payoutPrefs.stablecoin)} to ${worker.name}`,
         `${fmtAmount(inv)} confirmed on-chain.`,
         `/company/invoices/${inv.id}`,
       ),

@@ -140,7 +140,7 @@ test("11. Eun completes verification", async () => {
   await signOut();
   await loginAs("Eun Nguyen", /\/worker$/);
   await expect(page.getByText("Finish verification to receive payouts")).toBeVisible();
-  await page.getByRole("link", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
   await page.waitForURL(/\/worker\/onboarding$/);
   await expect(page.getByRole("heading", { name: "Residential address" })).toBeVisible();
   await page.getByRole("button", { name: "Continue" }).click();

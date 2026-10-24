@@ -6,6 +6,7 @@ import { invoiceHash } from "@/lib/chain/memo";
 import { getWorker, putInvoice, putPayrollRun } from "@/lib/db/repo";
 import { newId } from "@/lib/domain/ids";
 import type { Invoice, PayrollRun } from "@/lib/domain/types";
+import { formatMoney } from "@/lib/format";
 import { scheduleInvoice } from "@/lib/scheduler";
 import { notify } from "@/lib/settlement/notify";
 import { requireCompany } from "@/lib/session";
@@ -48,7 +49,7 @@ export async function createPayrollRun(formData: FormData) {
     invoiceIds.map(async (id) => {
       const inv = (await import("@/lib/db/repo")).getInvoice(id);
       const i = await inv;
-      if (i) await notify({ type: "worker", id: i.workerId }, "invoice_scheduled", `Payroll on its way: ${i.amount.toLocaleString("en-US")} ${i.currency}`, "Batch settlement started.", `/worker/invoices/${i.id}`);
+      if (i) await notify({ type: "worker", id: i.workerId }, "invoice_scheduled", `Payroll on its way: ${formatMoney(i.amount, i.currency)}`, "Batch settlement started.", `/worker/invoices/${i.id}`);
     }),
   );
   revalidatePath("/company/payroll");

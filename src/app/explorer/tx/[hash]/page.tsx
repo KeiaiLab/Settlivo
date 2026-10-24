@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Logo } from "@/components/shell/logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Usdc } from "@/components/ui/money";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { chainMode } from "@/lib/chain";
 import { decodeMemo } from "@/lib/chain/memo";
@@ -36,7 +37,7 @@ export default async function ExplorerTx({ params }: { params: Promise<{ hash: s
             {row("Timestamp", `${formatDateTime(tx.confirmedAt ?? tx.createdAt)}${tx.confirmedAt ? "" : " (submitted)"}`)}
             {row("From", <span className="font-mono text-xs">{tx.from} <span className="text-muted-foreground">(Settlivo treasury)</span></span>)}
             {row("To", <span className="font-mono text-xs">{tx.to}</span>)}
-            {row("Token transfer", <span className="flex flex-wrap items-center gap-2"><span className="font-mono">{tx.amount} {tx.token}</span><ArrowRight className="size-3 text-muted-foreground" /><span className="text-muted-foreground">ERC-20 transfer via {tx.token} contract</span></span>)}
+            {row("Token transfer", <span className="flex flex-wrap items-center gap-2"><Usdc value={tx.amount} token={tx.token} exact className="font-medium" /><ArrowRight className="size-3 text-muted-foreground" /><span className="text-muted-foreground">ERC-20 transfer via {tx.token} contract</span></span>)}
             {row("Gas used", tx.gasUsed ? `${tx.gasUsed.toLocaleString("en-US")} · ~$0.002` : "—")}
             {row("Method", <span className="font-mono text-xs">transfer(address,uint256) + memo</span>)}
           </dl>
@@ -48,7 +49,7 @@ export default async function ExplorerTx({ params }: { params: Promise<{ hash: s
           <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted/40 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground">{tx.calldata}</pre>
           {memo ? (
             <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
-              <div className="mb-1 text-xs uppercase tracking-wide text-emerald-300">Decoded Settlivo memo</div>
+              <div className="mb-1 text-sm font-medium text-emerald-300">Decoded Settlivo memo</div>
               <dl className="grid grid-cols-[120px_1fr] gap-y-1 text-xs">
                 <dt className="text-muted-foreground">Invoice</dt><dd className="font-mono"><Link href={`/company/invoices/${memo.invoiceId}`} className="hover:underline">{memo.invoiceId}</Link></dd>
                 <dt className="text-muted-foreground">Invoice hash</dt><dd className="font-mono break-all">{memo.invoiceHash}</dd>

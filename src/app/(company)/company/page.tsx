@@ -6,9 +6,9 @@ import { InvoiceTable } from "@/components/invoices/invoice-table";
 import { Page } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Usdc } from "@/components/ui/money";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getChain } from "@/lib/chain";
-import { formatUsdc } from "@/lib/format";
 import { companyContext, thisMonth } from "@/lib/queries/company";
 import { requireCompany } from "@/lib/session";
 
@@ -35,8 +35,8 @@ export default async function CompanyHome() {
       }
     >
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Treasury balance" value={formatUsdc(balance)} hint="Base · USDC" icon={<Wallet className="size-5" />} />
-        <StatCard label={`Paid in ${period}`} value={formatUsdc(paidThisMonth)} hint={`${confirmedThisMonth.length} settlements`} icon={<ArrowUpRight className="size-5" />} />
+        <StatCard label="Treasury balance" value={<Usdc value={balance} />} hint="Base · USDC" icon={<Wallet className="size-5" />} />
+        <StatCard label={`Paid in ${period}`} value={<Usdc value={paidThisMonth} />} hint={`${confirmedThisMonth.length} settlements`} icon={<ArrowUpRight className="size-5" />} />
         <StatCard label="In flight" value={inFlight.length} hint="scheduled or settling" icon={<Clock className="size-5" />} />
         <StatCard label="Workers" value={workers.length} hint={`${workers.filter((w) => w.kyc.status === "verified").length} verified`} icon={<Users className="size-5" />} />
       </div>
@@ -49,7 +49,7 @@ export default async function CompanyHome() {
               <Link href="/company/invoices" className="text-xs text-muted-foreground hover:text-foreground">View all</Link>
             </CardHeader>
             <CardContent className="px-0">
-              <InvoiceTable invoices={invoices.slice(0, 8)} workers={workerMap} base="/company" />
+              <InvoiceTable invoices={invoices.slice(0, 8)} workers={workerMap} base="/company" compact />
             </CardContent>
           </Card>
         </div>

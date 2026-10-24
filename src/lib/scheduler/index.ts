@@ -2,6 +2,7 @@ import { resumeHook, start } from "workflow/api";
 import { getInvoice, getWorker, putInvoice } from "@/lib/db/repo";
 import { transition } from "@/lib/domain/invoice-status";
 import type { Invoice } from "@/lib/domain/types";
+import { formatMoney } from "@/lib/format";
 import { notify } from "@/lib/settlement/notify";
 import { invoiceWorkflow } from "@/workflows/invoice";
 
@@ -54,7 +55,7 @@ export async function approveInvoice(
   const worker = await getWorker(inv.workerId);
   const counterpart = inv.initiatedBy === "company" ? { type: "org" as const, id: inv.orgId } : { type: "worker" as const, id: inv.workerId };
   const href = counterpart.type === "org" ? `/company/invoices/${inv.id}` : `/worker/invoices/${inv.id}`;
-  const label = `${inv.amount.toLocaleString("en-US")} ${inv.currency}`;
+  const label = formatMoney(inv.amount, inv.currency);
   await notify(
     counterpart,
     approved ? "invoice_approved" : "invoice_rejected",

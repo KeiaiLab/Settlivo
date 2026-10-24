@@ -1,7 +1,7 @@
+import { AmountField } from "@/components/invoices/amount-field";
 import { Page } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { LocalDateTime } from "@/components/ui/local-datetime";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,18 +28,14 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: P
                 {workers.map((w) => <option key={w.id} value={w.id}>{w.name} · {w.country} · {w.localCurrency}{w.kyc.status !== "verified" ? " · KYC pending" : ""}</option>)}
               </select>
             </div>
-            <div className="grid grid-cols-[1fr_auto] gap-3">
-              <div className="grid gap-1.5">
-                <Label htmlFor="amount">Amount (local currency)</Label>
-                <Input id="amount" name="amount" type="number" min="1" step="any" required defaultValue={first ? Math.round(1000 * rates.rates[first.localCurrency]) : 1000} />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="currency">Currency</Label>
-                <select id="currency" name="currency" defaultValue={first?.localCurrency ?? "USD"} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
-                  {SUPPORTED_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-            </div>
+            <AmountField
+              label="Amount (local currency)"
+              currencies={SUPPORTED_CURRENCIES}
+              defaultAmount={first ? Math.round(1000 * rates.rates[first.localCurrency]) : 1000}
+              defaultCurrency={first?.localCurrency ?? "USD"}
+              rates={rates.rates}
+              stablecoin={first?.payoutPrefs.stablecoin ?? "USDC"}
+            />
             <div className="grid gap-1.5">
               <Label htmlFor="scheduledAt">Settle at</Label>
               <LocalDateTime id="scheduledAt" name="scheduledAt" />
