@@ -25,6 +25,7 @@
 - [10. KYC 차단과 재시도](#10-kyc-차단과-재시도)
 - [11. 알림](#11-알림)
 - [12. 조직 전환](#12-조직-전환)
+- [12b. 구독 플랜과 Billing](#12b-구독-플랜과-billing)
 - [13. 워커 등록·제거·오프보딩](#13-워커-등록제거오프보딩)
 - [14. 조직 지갑](#14-조직-지갑)
 - [15. 워커 지갑과 링크 요청](#15-워커-지갑과-링크-요청)
@@ -69,17 +70,17 @@ npm run dev                  # 콘솔에 "[settlivo] Using local file KV store a
 curl -X POST https://settlivo.vercel.app/api/seed -H "x-seed-secret: $SEED_SECRET" -d '{"flush":true}'
 ```
 
-로컬: `npm run seed` (항상 flush). 응답/출력은 `{"orgs":2,"wallets":12,"linkRequests":1,"workers":6,"invoices":25,"txs":23,"payrollRuns":2,"withdrawals":3,"notifications":27,"fxHistory":31}` 입니다. 요청/응답 형태는 [17. API와 데이터 리셋](#17-api와-데이터-리셋) 참고.
+로컬: `npm run seed` (항상 flush). `npm run seed`의 콘솔 출력은 `{"orgs":2,"wallets":12,"linkRequests":1,"workers":6,"invoices":25,"txs":23,"payrollRuns":2,"withdrawals":3,"notifications":27,"fxHistory":31}`이고, `POST /api/seed`의 HTTP 응답은 같은 값을 `counts`로 한 번 감싼 `{"counts":{"orgs":2,…}}`입니다. 요청/응답 형태는 [17. API와 데이터 리셋](#17-api와-데이터-리셋) 참고.
 
 ### 리셋 직후 상태 (페르소나별 대기 항목)
 
 | 페르소나 | 역할 | 리셋 직후 보이는 것 |
 | --- | --- | --- |
-| Jordan Lee | Finance Lead · Acme Remote (Acme + Nordwind 두 조직 관리) | 대시보드 "Needs your attention"에 3건: "Eun Nguyen · KYC pending", "Bob Reyes changed payout settings", "Carlos Mendes requested payment". 알림 12건(미읽음 7). Treasury 48,250 USDC + Operations 12,500 USDC. 과거 페이롤 런 2건. |
-| Mia Schulz | People Ops · Nordwind Labs | 대기 항목 없음. 알림 1건(읽음). Treasury 21,900 USDC + EUR operations 4,200 USDC. "Former workers (1)"에 Finn Larsen. |
+| Jordan Lee | Finance Lead · Acme Remote (Acme + Nordwind 두 조직 관리) | 대시보드 "Needs your attention"에 3건: "Eun Nguyen · KYC pending", "Bob Reyes changed payout settings", "Carlos Mendes requested payment". 알림 12건(미읽음 7). Treasury 48,250 USDC + Operations 12,500 USDC. 과거 페이롤 런 2건. Acme 플랜 **Business**(무제한 전송, 이달 6건 전송, 11/12 갱신) → `/company/billing` "Current plan" "Business". |
+| Mia Schulz | People Ops · Nordwind Labs | 대기 항목 없음. 알림 1건(읽음). Treasury 21,900 USDC + EUR operations 4,200 USDC. "Former workers (1)"에 Finn Larsen. Nordwind 플랜 **Free**(월 3건 한도, 3/3 소진, 11/1 갱신) → 리셋 직후 Nordwind에서 새 정산을 돌리면 "Blocked · Plan"으로 보류되며 `/company/billing`에서 업그레이드해야 정산됩니다([12b](#12b-구독-플랜과-billing)). |
 | Alice Kim | KR · KRW · Verified (Acme + Nordwind 소속) | 잔액 2,400 USDC. 지갑 "Settlivo wallet"(Payout wallet)과 "Ledger (cold)". 은행 KB Kookmin ****2841. Nordwind 급여는 fixed 모드라 목록에 "Fixed" 배지. |
-| Bob Reyes | PH · PHP · Verified | 잔액 1,320.50 USDT(외부 지갑 "MetaMask"가 기본). 페이아웃 설정 변경이 회사 승인 대기 중(→ Settlivo wallet, USDC). Acme의 지갑 링크 요청 1건 대기. 은행 BDO Unibank ****7730. |
-| Carlos Mendes | BR · BRL · Verified | 잔액 860 USDC. 본인이 보낸 결제 요청 1건 "Overtime: release weekend" R$2,400 (status Awaiting approval, 내일 09:00 UTC 예정). 은행 Nubank ****1190. |
+| Bob Reyes | PH · PHP · Verified | 잔액 1,320.50 USDT(외부 지갑 "MetaMask"가 기본). Settlivo wallet(플랫폼 주소 0xb0b0…)에는 420 USDC가 따로 있음. 페이아웃 설정 변경이 회사 승인 대기 중(→ Settlivo wallet, USDC). Acme의 지갑 링크 요청 1건 대기. 은행 BDO Unibank ****7730. |
+| Carlos Mendes | BR · BRL · Verified | 잔액 860 USDC. 본인이 보낸 결제 요청 1건 "Overtime: release weekend" R$2,400 (status Awaiting approval, 내일 09:24 UTC = KST 18:24 예정; 분은 PRNG에서 나와 정각이 아님). 은행 Nubank ****1190. |
 | Dana Kowalski | PL · PLN · Verified (Nordwind) | 잔액 1,975.25 USDC. 은행 mBank ****5522. |
 | Eun Nguyen | VN · VND · KYC pending | 잔액 0. KYC 배너 "1 of 3 steps complete". "Upcoming"에 Acme Remote ₫38,000,000 "On hold until verified". 은행 계좌 없음(출금 불가). |
 
@@ -91,7 +92,7 @@ Finn Larsen(오프보딩된 전 직원)은 로그인 목록에 나오지 않습�
 - 날짜·시간은 `DEMO_TIMEZONE`(기본 `Asia/Seoul`) 기준으로 "Oct 24, 02:05 PM" 형식으로 표시됩니다.
 - 금액: 현지 통화는 좁은 기호(₩, ₱, R$, zł, ₫), KRW/VND는 소수점 없음. USDC는 화면에서 2자리, 툴팁에 6자리 전체 값.
 - 환율: 라이브 FX 조회가 실패하면 고정 fallback(KRW 1385.2, PHP 58.4, BRL 5.42, PLN 3.98, VND 25310, EUR 0.921)을 쓰며, 로그인 화면은 "Reference rates per USD", 워커 홈은 "· fallback rate"로 표시합니다. 리셋 직후 캐시는 `fallback`으로 저장되지만 다음 사용 시 라이브 조회를 다시 시도합니다.
-- 폼 액션에서 서버가 Error를 던지면 전체 페이지가 "That didn't go through" 화면(메시지 + "Try again" / "Go back")으로 바뀝니다. 인라인 에러가 아닙니다.
+- 폼 액션에서 서버가 Error를 던지면 전체 페이지가 "That didn't go through" 화면(메시지 + "Try again" / "Go back")으로 바뀝니다. 인라인 에러가 아닙니다. 로컬 `npm run dev`에서는 서버가 던진 Error 메시지가 그대로 보이지만, 프로덕션 빌드(Vercel)에서는 Next.js가 메시지를 digest로 대체하므로 항상 공통 문구 "The server declined the request, for example a missing wallet address or an unreachable service. Try again or go back."가 표시됩니다(`src/app/error.tsx`). 아래 각 섹션의 구체 메시지("Select at least one worker" 등)는 로컬 기준입니다.
 - 토스트는 Approve/Reject("Approved" / "Rejected" + "Email sent to the counterparty.")와 Retry("Settlement restarted")에만 있습니다. 나머지 폼은 토스트 없이 리다이렉트/재렌더링됩니다.
 - 워커 화면은 375px 폭에서도 쓸 수 있습니다. 좁은 화면에서는 네비게이션이 헤더 아래 두 번째 줄로 내려옵니다.
 
@@ -120,7 +121,7 @@ Finn Larsen(오프보딩된 전 직원)은 로그인 목록에 나오지 않습�
 ### 기대 결과
 
 - [ ] 로그인 목록: Company admins = Jordan Lee, Mia Schulz / Workers = Alice Kim, Bob Reyes, Carlos Mendes, Dana Kowalski, Eun Nguyen(각각 국기 이모지 + "{country} · {currency} · Verified|KYC pending"). Finn Larsen은 없음.
-- [ ] Jordan 클릭 → `/company`, 헤더 로고 "Settlivo", 네비 "Dashboard | Invoices | Payroll | Wallets | Workers | Approvals", 조직 `<select>`(aria-label "Organization")에 "Acme Remote | Nordwind Labs".
+- [ ] Jordan 클릭 → `/company`, 헤더 로고 "Settlivo", 네비 "Dashboard | Invoices | Payroll | Wallets | Billing | Workers | Approvals", 조직 `<select>`(aria-label "Organization")에 "Acme Remote | Nordwind Labs".
 - [ ] Alice 클릭 → `/worker`, 제목 "Hi, Alice", 설명 "KR · paid in USDC · shown in KRW", 네비 "Home / Request payment / Withdraw / Settings".
 - [ ] 워커 세션으로 `/company` 접근 → `/login`을 거쳐 `/worker`로 돌아옴(반대도 동일).
 - [ ] 브라우저 탭 제목 "Settlivo — Global stablecoin payroll".
@@ -161,7 +162,7 @@ Finn Larsen(오프보딩된 전 직원)은 로그인 목록에 나오지 않습�
 - [ ] 제목 "Acme Remote", 설명 "US · KYB verified · treasury 0x5e77a1b2…".
 - [ ] 카드: "Treasury balance" = 60,750.00 USDC(Treasury 48,250 + Operations 12,500), 힌트 "2 wallets · Base"(숫자는 `/company/wallets` 링크); "Paid in {Month}"(이달 UTC 기준 confirmed 합계, 힌트 "{n} settlements"); "In flight" = scheduled/sending 건수(리셋 직후 1 = Eun의 차단 인보이스), 힌트 "scheduled or settling"; "Workers" = 4, 힌트 "3 verified".
 - [ ] "Recent invoices": 최근 8건, 컬럼 Worker / Memo / Amount / Scheduled / Status(compact라 Stablecoin 컬럼 없음).
-- [ ] 절감 위젯: "Fees saved", "Days saved"(정산 건수 × 4), "Avg. settlement" "~10 min", 각주 "Bank baseline: $35 + 2.2% FX spread, 4 business days. Settlivo: 0.5%."
+- [ ] 절감 위젯: "Fees saved", "Days saved"(정산 건수 × 4), "Avg. settlement" "~10 min", 각주 "Bank baseline: $35 + 2.2% FX spread, 4 business days. Settlivo: 0.5%. On a paid plan, per-transfer fees are 0."
 - [ ] "Needs your attention" + 링크 "Approvals (2)": "Eun Nguyen · KYC pending"(배지 "Blocked · KYC", → 인보이스 상세), "Bob Reyes changed payout settings"(배지 "Pending", → `/company/approvals`), "Carlos Mendes requested payment"(배지 "Awaiting approval", → `/company/approvals`).
 
 ### 내부 동작
@@ -200,16 +201,17 @@ Jordan Lee로 로그인(Acme Remote). Alice Kim이 KYC verified 상태(시드 �
 
 - [ ] Spread 미리보기: "₩4,200,000 ≈ {usdc} USDC at today's indicative {rate} KRW/USD; final rate locked at send · fee {fee} USDC (0.5%)".
 - [ ] Fixed 미리보기: "₩4,200,000 = {usdc} USDC locked at {rate} for 24 h · fee {fee} USDC (1.1%)". 금액을 지우면 "Enter an amount to see the stablecoin equivalent."
+- [ ] 미리보기의 수수료(0.5% / 1.1%)는 건별 요율이며 플랜을 반영하지 않습니다. 실제 `feeUsdc`는 정산 시 보내는 조직의 플랜으로 계산되어 Acme(Business)는 spread 0.00 USDC, fixed는 0.6%(프리미엄만)가 부과됩니다. Free 조직(Nordwind)만 0.5% / 1.1% 전액을 냅니다([12b](#12b-구독-플랜과-billing)).
 - [ ] 제출 후 `/company/invoices/inv_…`로 리다이렉트(토스트 없음). 제목 "October salary", 설명 "Alice Kim · ₩4,200,000 · settle {datetime}", 헤더 배지 "Awaiting approval".
-- [ ] "Timeline" 카드: "Issued" 완료(초록 체크, "{datetime} · org_acme"), "Approved & scheduled"가 현재 단계(시계 아이콘).
+- [ ] "Timeline" 카드: "Issued"가 현재 단계(시계 아이콘, 아래 "{datetime} · org_acme"), "Approved & scheduled" 이하 세 단계는 빈 원. 승인 후에야 "Issued"가 초록 체크로 바뀌고 "Approved & scheduled"가 현재 단계가 됩니다.
 - [ ] "FX & settlement amount" 카드: spread면 설명 "Rate is locked at send time, not at invoice time.", "Pricing" "Spread · 0.5% fee"; fixed면 "Fixed · 1.1% fee, locked {rate} until {datetime}". "Executed rate (at send)" = "pending", "Settled amount" = "—".
 - [ ] "On-chain record" 카드: "Appears once settlement starts."
-- [ ] "Details": "Initiated by" company, "Worker" 링크, "Payout to" 주소 + "(USDC)".
+- [ ] "Details": "Initiated by" "Company"(값은 `company`지만 `capitalize`로 표시), "Worker" 링크, "Payout to" 주소 + "(USDC)".
 - [ ] `/company/invoices`에서 필터 "Open"에 새 인보이스가 보임(fixed면 Memo 옆 작은 "Fixed" 배지). 회사 쪽 Approve 버튼은 없음(회사 발행 건은 워커가 승인).
 
 ### 내부 동작
 
-`createInvoice`([src/lib/actions/invoices.ts](../src/lib/actions/invoices.ts))가 워커 소속·금액·통화·일시를 검증하고 `priceAtIssue(rateMode)`([src/lib/fx/pricing.ts](../src/lib/fx/pricing.ts))로 `rateMode/feeBps`(spread 50 bps, fixed 110 bps + `lockedRate`, `lockExpiresAt = scheduledAt + 24 h`)를 정한 뒤 `status: pending_approval`, `initiatedBy: company`, `quoteRate`, `invoiceHash`(sha256)로 저장합니다. 워커에게 `invoice_created` 알림("New invoice from Acme Remote: ₩4,200,000" / "October salary · scheduled {datetime}. Approve to receive it.")을 보내고 `scheduleInvoice`(workflow 모드면 `start(invoiceWorkflow)`, 승인 훅 `approve:{id}` 대기)를 호출합니다. 환율은 `currentRates()`(캐시가 live이고 10분 이내면 재사용). 미리보기는 클라이언트 `estimateUsdc`([src/components/invoices/amount-field.tsx](../src/components/invoices/amount-field.tsx)). 스펙 [§5.1](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#51-scenario-1--company-invoice--worker-approval--scheduled-payout), [§5.2](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#52-scenario-2--currency-based-amount-fx-pricing-spread-or-fixed).
+`createInvoice`([src/lib/actions/invoices.ts](../src/lib/actions/invoices.ts))가 워커 소속·금액·통화·일시를 검증하고 `priceAtIssue(rateMode)`([src/lib/fx/pricing.ts](../src/lib/fx/pricing.ts))로 `rateMode/feeBps`(spread 50 bps, fixed 110 bps + `lockedRate`, `lockExpiresAt = scheduledAt + 24 h`; `feeBps`는 표시용 건별 요율이고 실제 청구액 `feeUsdc`는 정산 시 `planFeeUsdc(plan.tier, mode, usdc)`로 계산)를 정한 뒤 `status: pending_approval`, `initiatedBy: company`, `quoteRate`, `invoiceHash`(sha256)로 저장합니다. 워커에게 `invoice_created` 알림("New invoice from Acme Remote: ₩4,200,000" / "October salary · scheduled {datetime}. Approve to receive it.")을 보내고 `scheduleInvoice`(workflow 모드면 `start(invoiceWorkflow)`, 승인 훅 `approve:{id}` 대기)를 호출합니다. 환율은 `currentRates()`(캐시가 live이고 10분 이내면 재사용). 미리보기는 클라이언트 `estimateUsdc`([src/components/invoices/amount-field.tsx](../src/components/invoices/amount-field.tsx)). 스펙 [§5.1](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#51-scenario-1--company-invoice--worker-approval--scheduled-payout), [§5.2](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#52-scenario-2--currency-based-amount-fx-pricing-spread-or-fixed).
 
 ### 문제가 있다면
 
@@ -250,7 +252,7 @@ Jordan Lee로 로그인(Acme Remote). Alice Kim이 KYC verified 상태(시드 �
 
 ### 내부 동작
 
-`approveMyInvoice` → `approveInvoice(id, "worker:wrk_alice", approved, reason)`([src/lib/scheduler/index.ts](../src/lib/scheduler/index.ts)). `pending_approval`일 때만 동작(멱등)하며 `scheduled` 또는 `rejected`로 전이하고 상대방에게 알림을 보냅니다. workflow 모드에서는 훅 `approve:{id}`를 500 ms 간격 최대 6회 `resumeHook`하고, 실패하면 새 run을 시작합니다. run은 `sleep(scheduledAt)` 후 `settleInvoice`([src/lib/settlement/settle.ts](../src/lib/settlement/settle.ts))를 호출: KYC 확인 → `sending` → 환율 조회(시뮬레이션 모드는 ±0.3% drift) → `priceAtSettlement` → 워커 기본 지갑으로 `chain.transfer`(calldata에 `SETTLIVO|{invoiceId}|{sha256}` 메모) → `waitForConfirmation`(2–5초, 블록 21,400,000 + 카운터) → `confirmed` → 양쪽 `invoice_settled` 알림. tick 모드에서는 열린 페이지의 3초 폴링이 `GET /api/tick`을 부르고 거기서 가장 오래된 due 인보이스 하나를 정산합니다. 상태 머신은 [src/lib/domain/invoice-status.ts](../src/lib/domain/invoice-status.ts). 스펙 [§5.1](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#51-scenario-1--company-invoice--worker-approval--scheduled-payout), [§5.4](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#54-settlement-step-shared-by-both-scheduler-engines).
+`approveMyInvoice` → `approveInvoice(id, "worker:wrk_alice", approved, reason)`([src/lib/scheduler/index.ts](../src/lib/scheduler/index.ts)). `pending_approval`일 때만 동작(멱등)하며 `scheduled` 또는 `rejected`로 전이하고 상대방에게 알림을 보냅니다. workflow 모드에서는 훅 `approve:{id}`를 500 ms 간격 최대 6회 `resumeHook`하고, 실패하면(그리고 승인인 경우에만) 새 run을 시작합니다. 거절은 run을 새로 띄우지 않습니다. run은 `sleep(scheduledAt)` 후 `settleInvoice`([src/lib/settlement/settle.ts](../src/lib/settlement/settle.ts))를 호출: KYC 확인(미검증이면 `blockedReason: "kyc"`) → 플랜 확인(`currentPlan(org.plan)` + `canSend`; Free는 월 3건이며 한도 초과면 `blockedReason: "plan"` + 조직 알림 `invoice_blocked_plan`("Monthly send limit reached (3 on Free)", → `/company/billing`), status `scheduled` 유지, 전송 없음) → `sending` → 환율 조회(시뮬레이션 모드는 ±0.3% drift) → `priceAtSettlement` + `planFeeUsdc`(플랜별 수수료) → 워커 기본 지갑으로 `chain.transfer`(calldata에 `SETTLIVO|{invoiceId}|{sha256}` 메모) → `waitForConfirmation`(2–5초, 블록 21,400,000 + 카운터) → `confirmed` → 조직 `plan.sendsThisMonth += 1`(Free의 마지막 건이면 알림 "Last free send of the month used" / "The next payout will wait until you upgrade or the month renews.") → 양쪽 `invoice_settled` 알림. tick 모드에서는 열린 페이지의 3초 폴링이 `GET /api/tick`을 부르고 거기서 가장 오래된 due 인보이스 하나를 정산합니다. 상태 머신은 [src/lib/domain/invoice-status.ts](../src/lib/domain/invoice-status.ts). 스펙 [§5.1](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#51-scenario-1--company-invoice--worker-approval--scheduled-payout), [§5.4](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#54-settlement-step-shared-by-both-scheduler-engines).
 
 ### 문제가 있다면
 
@@ -282,8 +284,9 @@ Jordan Lee로 로그인(Acme Remote). Alice Kim이 KYC verified 상태(시드 �
 ### 기대 결과
 
 - [ ] FX 카드 행: "Pricing"("Spread · 0.5% fee" 또는 "Fixed · 1.1% fee, locked {rate} until {datetime}"), "Quote rate (at issue)", "Executed rate (at send)"(더 이상 "pending" 아님), "Change"(±x.xxx%, 0 이하 초록 / 양수 빨강), "Applied rate"(fixed 잠금 만료 시 " (lock expired, market rate used)"), "Fee", "Settled amount"(USDC). 오른쪽 "30-day KRW/USD" 스파크라인.
+- [ ] "Fee"는 플랜 기준 실제 청구액(`feeUsdc`)입니다: Free 플랜은 0.5% / 1.1%, Pro·Business는 spread 0 USDC / fixed 0.6%(프리미엄만). Acme는 Business라 이 튜토리얼에서 정산한 spread 건은 "Fee" "0.00 USDC"로 보이며, 같은 카드의 "Pricing" 행 "Spread · 0.5% fee" 표기(`feeBps`, Free 기준)와 다른 것이 정상입니다. 시드의 과거 confirmed 인보이스는 플랜 없이 생성되어 0.5% / 1.1%가 찍혀 있습니다.
 - [ ] Fixed 인보이스는 "Applied rate" = 잠금 환율(견적과 동일), Spread는 "Applied rate" = "Executed rate".
-- [ ] On-chain record 헤더: 초록 방패 "Verified"; 설명 "Invoice ID and SHA-256 hash are embedded in the transfer calldata."; 행 "Tx hash"(축약 링크), "Status" "confirmed · block 21,400,0xx", "Memo" "SETTLIVO|inv_…|{hash 축약}", "Invoice hash"(64자리 hex).
+- [ ] On-chain record 헤더: 초록 방패 "Verified"; 설명 "Invoice ID and SHA-256 hash are embedded in the transfer calldata."; 행 "Tx hash"(축약 링크), "Status" "Confirmed · block 21,400,0xx"(`capitalize` 표시), "Memo" "SETTLIVO|inv_…|{hash 축약}", "Invoice hash"(64자리 hex).
 - [ ] 탐색기: 상단 알약 "Explorer · Base (simulated)", 배지 "Confirmed", 행 "Transaction hash", "Block", "Timestamp", "From" "{addr} (Settlivo treasury)"(= 0x5e77a1b2…), "To"(워커 지갑), "Token transfer" "{amount} USDC → ERC-20 transfer via USDC contract", "Gas used" "{n} · ~$0.002", "Method" "transfer(address,uint256) + memo".
 - [ ] "Input data": raw calldata(`0xa9059cbb`로 시작) + 초록 "Decoded Settlivo memo" 상자("Invoice" 링크, "Invoice hash"). 링크는 세션 역할에 따라 `/worker/invoices/{id}` 또는 `/company/invoices/{id}`.
 - [ ] 탐색기는 로그인 없이도 열립니다.
@@ -356,7 +359,7 @@ Alice Kim으로 로그인(은행 KB Kookmin ****2841 보유, 잔액 ≥ 100 USDC
 워커(선택, Alice):
 
 1. `/worker/settings`(네비 "Settings") → "How you get paid" 카드.
-2. "Cadence"를 "Bi-weekly"로, "Bank (for withdrawals)" 비우기(비우면 기존 은행 유지) → "Submit for approval".
+2. "Cadence"를 "Bi-weekly"로, "Stablecoin" select를 `USDT`로(도움말 "USDC is the compliance default. USDT is available where local off-ramps prefer it."), "Bank (for withdrawals)" 비우기(비우면 기존 은행 유지) → "Submit for approval".
 3. 옆 "Pending change" 카드의 diff를 확인합니다.
 
 회사(Jordan):
@@ -371,15 +374,16 @@ Alice Kim으로 로그인(은행 KB Kookmin ****2841 보유, 잔액 ≥ 100 USDC
 
 ### 기대 결과
 
-- [ ] (Alice) 제출 후 리다이렉트 없이 "Pending change" 카드에 diff(표 행 "Wallet", "Stablecoin", "Display currency", "Cadence", "Bank account"; 바뀐 값은 현재값 취소선 + 제안값 초록). Jordan·Mia 양쪽 조직에 알림 "Alice Kim changed payout settings" / "Settlivo wallet · USDC · biweekly. Needs approval.". 활성 설정은 아직 그대로.
-- [ ] (Jordan) Bob 카드: 설명 "Submitted {timeAgo}", diff에 "Wallet" "External 0x7c3e5a2b…" → "Settlivo wallet", "Stablecoin" USDT → USDC. "Approve" → 토스트 "Approved" + "Email sent to the counterparty." → 카운트 "Payout setting changes (0)". 거절 시 토스트 "Rejected".
+- [ ] (Alice) 제출 후 리다이렉트 없이 "Pending change" 카드에 diff(표 행 "Wallet", "Stablecoin", "Display currency", "Cadence", "Bank account"; 바뀐 값은 현재값 취소선 + 제안값 초록; "Stablecoin" USDC → USDT, "Cadence" Monthly → Bi-weekly). Jordan·Mia 양쪽 조직에 알림 "Alice Kim changed payout settings" / "Settlivo wallet · USDT · biweekly. Needs approval.". 활성 설정은 아직 그대로.
+- [ ] (Jordan) Bob 카드: 설명 "Submitted {timeAgo}", diff에 "Wallet" "External 0x7c3e5a…" → "Settlivo wallet"(주소는 앞 8자만), "Stablecoin" USDT → USDC. "Approve" → 토스트 "Approved" + "Email sent to the counterparty." → 카운트 "Payout setting changes (0)". 거절 시 토스트 "Rejected".
 - [ ] Bob 프로필 "Payout settings": "Wallet"이 플랫폼 지갑 주소, "Stablecoin" USDC; "Wallets" 카드에서 "Settlivo wallet"에 "Payout wallet" 배지. "Pending change awaiting approval." 문구 사라짐.
-- [ ] (Bob) 알림 "Acme Remote approved your payout settings" / "Future payouts go to your Settlivo wallet in USDC." (거절이면 "Acme Remote declined your payout settings" / "Reason: …"). 대시보드 "Needs your attention"에서 "Bob Reyes changed payout settings" 행이 사라짐.
+- [ ] (Bob) 알림 "Acme Remote approved your payout settings" / "Future payouts go to your Settlivo wallet in USDC." (거절이면 "Acme Remote declined your payout settings" / "Reason: …"). 대시보드 "Needs your attention"에서 "Bob Reyes changed payout settings" 행이 사라짐. Bob 홈 "Available balance"가 1,320.50 USDT → 420.00 USDC로 바뀌고 부제가 "PH · paid in USDC · shown in PHP"가 됨(기본 지갑이 Settlivo wallet, 토큰이 USDC로 바뀌어 그 주소·토큰의 시드 잔액을 읽기 때문; 돈이 사라진 것이 아님).
+- [ ] (Alice, Jordan이 USDT 변경을 승인했다면) Alice 설정 "Wallets" 행이 "Settlivo-custodied · USDT" / "External · USDT"로 바뀌고 홈 잔액이 USDT 기준 0으로 표시됨(`sim:balance`는 주소+토큰별이라 기존 2,400 USDC는 USDC로 남음); 다음 정산의 `chain.transfer`는 `payoutPrefs.stablecoin` = USDT로 나감. 거절했다면 그대로 USDC.
 - [ ] 워커 설정 "Wallets" 카드의 "Use for payouts" 버튼도 같은 승인 흐름을 탑니다: 누르면 그 지갑에 "Approval pending" 배지, 회사 알림 "{Worker} changed payout wallet" / "{label} ({kind}). Needs approval.".
 
 ### 내부 동작
 
-`submitPayoutPrefs`([src/lib/actions/worker.ts](../src/lib/actions/worker.ts))는 `pendingPayoutPrefs`만 쓰고(external이면 `0x`+40 hex 검증, 실패 시 "External address must be a 0x… 40-hex address") 모든 소속 조직에 `prefs_submitted` 알림을 보냅니다. `setPayoutWallet`([src/lib/actions/wallets.ts](../src/lib/actions/wallets.ts))도 동일하게 pending만 기록. `approvePayoutPrefs`([src/lib/actions/approvals.ts](../src/lib/actions/approvals.ts)): 승인 시 `payoutPrefs = pending`으로 복사하고 `prefs.walletId` 지갑을 `isDefault`로, 거절 시 유지; 둘 다 pending을 지우고 `prefs_approved`/`prefs_rejected` 알림(→ `/worker/settings`). diff 표는 [src/components/approvals/prefs-diff.tsx](../src/components/approvals/prefs-diff.tsx). 스펙 [§5.3](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#53-scenario-3--worker-chooses-payout-conditions-company-approves), [§5.12](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#512-wallets). 참고: 스펙은 워커 화면을 "Payout settings"라 부르지만 코드의 제목은 "Settings" / 카드 "How you get paid"입니다.
+`submitPayoutPrefs`([src/lib/actions/worker.ts](../src/lib/actions/worker.ts))는 `pendingPayoutPrefs`만 쓰고(external이면 `0x`+40 hex 검증, 실패 시 "External address must be a 0x… 40-hex address") 모든 소속 조직에 `prefs_submitted` 알림을 보냅니다. `setPayoutWallet`([src/lib/actions/wallets.ts](../src/lib/actions/wallets.ts))도 동일하게 pending만 기록. `approvePayoutPrefs`([src/lib/actions/approvals.ts](../src/lib/actions/approvals.ts)): 승인 시 `payoutPrefs = pending`으로 복사하고 `prefs.walletId` 지갑을 `isDefault`로, 워커의 모든 지갑 `token`을 승인된 stablecoin으로 바꿈(잔액이 주소+토큰별이라 지갑이 코인을 따라감), 거절 시 유지; 둘 다 pending을 지우고 `prefs_approved`/`prefs_rejected` 알림(→ `/worker/settings`). diff 표는 [src/components/approvals/prefs-diff.tsx](../src/components/approvals/prefs-diff.tsx). 스펙 [§5.3](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#53-scenario-3--worker-chooses-payout-conditions-company-approves), [§5.12](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#512-wallets). 참고: 스펙은 워커 화면을 "Payout settings"라 부르지만 코드의 제목은 "Settings" / 카드 "How you get paid"입니다.
 
 ### 문제가 있다면
 
@@ -420,7 +424,7 @@ Alice Kim으로 로그인(은행 KB Kookmin ****2841 보유, 잔액 ≥ 100 USDC
 - [ ] (Carlos) 제출 후 `/worker/invoices/inv_…`로 리다이렉트, 배지 "Awaiting approval", 승인 버튼 없음(워커 발행 건은 회사가 승인). 홈의 "Upcoming"/"Needs your approval"에는 뜨지 않음.
 - [ ] (Jordan) 알림 "Payment request from Carlos Mendes: R$500.00" / "Weekend support · wants it {datetime}"(→ `/company/approvals`). 대시보드 "Needs your attention"에 "Carlos Mendes requested payment" 행(배지 "Awaiting approval").
 - [ ] "Approve & schedule" → 토스트 "Approved" + "Email sent to the counterparty." → "Payment requests (0)". `/company/invoices?f=open`에 "Overtime: release weekend" 행 배지 "Scheduled".
-- [ ] 시드 요청은 **내일 09:00 UTC** 예약이라 즉시 정산되지 않고 Scheduled로 남습니다. 2분 예약으로 낸 새 요청은 [4](#4-워커-승인과-예약-정산)와 같이 Sending → Confirmed.
+- [ ] 시드 요청은 **내일 09:24 UTC(KST 18:24)** 예약이라 즉시 정산되지 않고 Scheduled로 남습니다. 2분 예약으로 낸 새 요청은 [4](#4-워커-승인과-예약-정산)와 같이 Sending → Confirmed.
 - [ ] (Carlos) 알림 "Invoice approved: R$500.00" / "Carlos Mendes's invoice is scheduled for {datetime}." 거절이면 "Invoice rejected: …" / "Reason: …".
 
 ### 내부 동작
@@ -474,6 +478,7 @@ Jordan Lee로 로그인(Acme Remote). Alice·Bob·Carlos가 verified(시드 기�
 - "Settled"가 "0 / 3"에서 멈춤: workflow 모드 안전망은 45초 후에 작동하므로 탭을 열어 둔 채 최대 1분 기다리세요. 그래도 안 움직이면 `/company/invoices?f=open`에서 건별 상태와 "Error"를 확인.
 - Eun이 체크 가능하면 KYC가 이미 verified된 것([10](#10-kyc-차단과-재시도) 수행 후). 이 경우 4 / 4가 됩니다.
 - 금액 0 또는 음수 행은 조용히 건너뜁니다(에러 아님).
+- 행이 "Blocked · Plan"이고 "Settled" 카드 힌트가 "held by plan limit · see Billing"이면 보내는 조직의 Free 한도(월 3건) 초과입니다 — 스케줄러 문제가 아니라 정상 동작. Nordwind(Free, 3/3 소진)에서 돌렸을 때 그렇습니다. `/company/billing`에서 "Upgrade to Business"를 누르면 보류 건이 자동 재개됩니다([12b](#12b-구독-플랜과-billing)). Acme(Business)는 이 경로를 타지 않으며 "Fee" 행은 0.00 USDC.
 
 ---
 
@@ -517,7 +522,7 @@ Jordan Lee로 로그인(Acme Remote). Alice·Bob·Carlos가 verified(시드 기�
 
 ### 내부 동작
 
-`settleInvoice`는 `worker.kyc.status !== "verified"`이면 전송 없이 `blockedReason: "kyc"`만 기록하고(status는 `scheduled` 유지) 조직에 `invoice_blocked` 알림을 보냅니다. `/api/tick`은 `blockedReason`이 있는 건을 건너뜁니다. 온보딩은 `completeKycStep(step)` → `finishKyc`([src/lib/actions/worker.ts](../src/lib/actions/worker.ts))가 `kyc.status = verified`, 워커·모든 조직에 `kyc_verified` 알림을 넣고 `/worker`로 리다이렉트(위저드 [src/components/worker/kyc-wizard.tsx](../src/components/worker/kyc-wizard.tsx)는 파일을 실제로 업로드하지 않으며, 3단계 완료 후 3,000 ms 뒤 자동으로 `onFinish`). 검증 완료가 차단 건을 자동 재시도하지는 않습니다. 회사의 `retryInvoiceAction` → `retryInvoice`([src/lib/scheduler/index.ts](../src/lib/scheduler/index.ts)): `scheduled + blockedReason`이면 플래그만 지우고(`failed`면 `scheduled`로 전이) `scheduleInvoice`; `scheduledAt`은 해시의 일부라 바꾸지 않습니다. Retry 버튼은 `failed`이거나 `scheduled + blocked + 워커 verified`일 때만 렌더링됩니다. 스펙 [§5.8](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#58-kyc-simulation), [§8](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#8-error-handling-and-fallbacks) (스펙의 `blocked_kyc` 플래그는 코드에서 `blockedReason: "kyc"`).
+`settleInvoice`는 `worker.kyc.status !== "verified"`이면 전송 없이 `blockedReason: "kyc"`만 기록하고(status는 `scheduled` 유지) 조직에 `invoice_blocked` 알림을 보냅니다. `/api/tick`은 `blockedReason`이 있는 건을 건너뜁니다. 온보딩은 `completeKycStep(step)` → `finishKyc`([src/lib/actions/worker.ts](../src/lib/actions/worker.ts))가 `kyc.status = verified`, 워커·모든 조직에 `kyc_verified` 알림을 넣고 `/worker`로 리다이렉트(위저드 [src/components/worker/kyc-wizard.tsx](../src/components/worker/kyc-wizard.tsx)는 파일을 실제로 업로드하지 않으며, 3단계 완료 후 3,000 ms 뒤 자동으로 `onFinish`). 검증 완료가 차단 건을 자동 재시도하지는 않습니다. 회사의 `retryInvoiceAction` → `retryInvoice`([src/lib/scheduler/index.ts](../src/lib/scheduler/index.ts)): `scheduled + blockedReason`이면 플래그만 지우고(`failed`면 `scheduled`로 전이) `scheduleInvoice`; `scheduledAt`은 해시의 일부라 바꾸지 않습니다. Retry 버튼은 `failed`, `scheduled + blockedReason "kyc" + 워커 verified`, 또는 `scheduled + blockedReason "plan" + 플랜에 전송 여유(`canSend`, 업그레이드/월 갱신 후)`일 때 렌더링됩니다. 플랜 보류 건은 상단에 주황 배너(`data-testid="plan-notice"`: "Held by your plan: Free allows 3 sends a month and all are used. Upgrade to send now, or wait until {datetime}." / 여유가 생기면 "Your plan has sends available again ({n} left this month). Retry to send this payout now.")와 타임라인 "Held by the sender's plan limit"가 보입니다([12b](#12b-구독-플랜과-billing)). 스펙 [§5.8](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#58-kyc-simulation), [§8](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#8-error-handling-and-fallbacks) (스펙의 `blocked_kyc`/`blocked_plan` 플래그는 코드에서 `blockedReason: "kyc" | "plan"`).
 
 ### 문제가 있다면
 
@@ -550,12 +555,12 @@ Jordan Lee로 로그인(Acme Remote). Alice·Bob·Carlos가 verified(시드 기�
 - [ ] 종 아이콘에 초록 미읽음 수 배지(Jordan: 7). 드롭다운 헤더 "Notifications", 최근 8건(제목, 본문 1줄, "{n}m ago"), 미읽음은 초록 점. 비어 있으면 "You're all caught up."
 - [ ] `/notifications`: 제목 "Notifications", 설명 "12 total"(Jordan). 일자 헤딩 "Friday, October 24" 형식, 각 항목 제목·본문·"Oct 24, 10:02 AM". 비어 있으면 "Nothing yet."
 - [ ] `/notifications`를 한 번 연 뒤에는 미읽음 배지가 사라지고 드롭다운의 초록 점도 없어짐.
-- [ ] Jordan의 시드 알림 예: "Payment request from Carlos Mendes", "Bob Reyes changed payout settings", "Payout blocked: verification pending", "Settled 3,042.57 USDC to Alice Kim". Alice 예: "You received 3,042.57 USDC", "Withdrawal completed: ₩2,067,411". Eun: "Complete verification to receive ₫38,000,000".
+- [ ] Jordan의 시드 알림 예: "Payment request from Carlos Mendes", "Bob Reyes changed payout settings", "Payout blocked: verification pending", "Settled 3,042.57 USDC to Alice Kim". Alice 예: "You received 3,042.57 USDC", "Withdrawal completed: ₩2,067,411". Eun: "Complete verification to receive ₫38,000,000". 플랜 관련([12b](#12b-구독-플랜과-billing) 수행 후, Nordwind): "Monthly send limit reached (3 on Free)" / "{amount} for {worker} is on hold. Upgrade to keep sending this month."와 "Nordwind Labs is on Business" / "Unlimited sends. 2 held payouts resumed."(둘 다 → `/company/billing`).
 - [ ] 항목 클릭 시 `href`로 이동(인보이스 상세, `/company/approvals`, `/worker/settings`, `/worker/withdraw` 등).
 
 ### 내부 동작
 
-모든 알림은 `notify()`([src/lib/settlement/notify.ts](../src/lib/settlement/notify.ts)) 한 곳에서 생성되어 `notification:{id}` + 리스트 `{org|worker}:{id}:notifications`(LPUSH, 최신 우선)에 저장됩니다([src/lib/db/repo.ts](../src/lib/db/repo.ts)). `NotificationBell`([src/components/shell/notification-bell.tsx](../src/components/shell/notification-bell.tsx))은 서버 컴포넌트로 최근 8건을 읽고, `/notifications`([src/app/notifications/page.tsx](../src/app/notifications/page.tsx))는 최대 200건을 읽은 뒤 즉시 `markNotificationsRead`합니다. 19가지 kind(invoice_created/approved/rejected/scheduled/settled/failed/blocked/rate_lock_expired, prefs_submitted/approved/rejected, withdrawal_completed, kyc_verified, worker_invited/offboarded, wallet_added, link_requested/accepted/declined)가 있으며 "Email sent" 토스트는 실제 이메일이 아니라 알림 생성의 시각적 신호입니다. 스펙 [§5.9](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#59-notifications) (스펙 §7의 "페르소나당 ~15건"은 코드에서 총 27건: Acme 12, Alice 5, Bob 4, Carlos 3, Nordwind 1, Dana 1, Eun 1).
+모든 알림은 `notify()`([src/lib/settlement/notify.ts](../src/lib/settlement/notify.ts)) 한 곳에서 생성되어 `notification:{id}` + 리스트 `{org|worker}:{id}:notifications`(LPUSH, 최신 우선)에 저장됩니다([src/lib/db/repo.ts](../src/lib/db/repo.ts)). `NotificationBell`([src/components/shell/notification-bell.tsx](../src/components/shell/notification-bell.tsx))은 서버 컴포넌트로 최근 8건을 읽고, `/notifications`([src/app/notifications/page.tsx](../src/app/notifications/page.tsx))는 최대 200건을 읽은 뒤 즉시 `markNotificationsRead`합니다. 21가지 kind(invoice_created/approved/rejected/scheduled/settled/failed/blocked/rate_lock_expired/blocked_plan, plan_upgraded, prefs_submitted/approved/rejected, withdrawal_completed, kyc_verified, worker_invited/offboarded, wallet_added, link_requested/accepted/declined)가 있으며 "Email sent" 토스트는 실제 이메일이 아니라 알림 생성의 시각적 신호입니다. 스펙 [§5.9](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#59-notifications) (스펙 §7의 "페르소나당 ~15건"은 코드에서 총 27건: Acme 12, Alice 5, Bob 4, Carlos 3, Nordwind 1, Dana 1, Eun 1).
 
 ### 문제가 있다면
 
@@ -585,9 +590,10 @@ Jordan Lee(Acme + Nordwind)로 로그인. 비교용으로 Mia Schulz(Nordwind만
 ### 기대 결과
 
 - [ ] 선택 즉시 `/company`로 이동, 제목 "Nordwind Labs", 설명 "DE · KYB verified · treasury 0x9a1f3c2e…", 헤더 부제 "Finance Lead · Nordwind Labs", "Treasury balance" 26,100.00 USDC(21,900 + 4,200), "Workers" 2.
-- [ ] `/company/workers`: "Alice Kim"(KR · KRW)과 "Dana Kowalski"(PL · PLN); "Former workers (1)"에 "Finn Larsen" + 배지 "Former". Alice의 "Settlements"는 Nordwind 건수만.
-- [ ] `/company/invoices`: Alice의 Nordwind 급여(₩1,900,000, Memo 옆 "Fixed" 배지), Dana(zł12,500), Finn(€4,100) 건만. Acme 건은 없음.
+- [ ] `/company/workers`: 테이블 컬럼 "Name | Country | Payout | KYC | Since | Settlements"(+ 행 끝 "Pay" 버튼 → 그 워커가 미리 선택된 `/company/invoices/new?worker={id}`); 행은 "Alice Kim"(KR · KRW)과 "Dana Kowalski"(PL · PLN); "Former workers (1)"에 "Finn Larsen" + 배지 "Former". Alice의 "Settlements"는 Nordwind 건수(3)만.
+- [ ] `/company/invoices`: Nordwind 건 총 9건 — Alice의 Nordwind 급여 ₩1,900,000 ×3(Memo 옆 "Fixed" 배지), Dana zł12,500 ×3 + "Design retainer" zł3,064(spread), Finn €4,100 ×2. Acme 건은 없음.
 - [ ] "Needs your attention"은 "Nothing pending."
+- [ ] 네비 "Billing"(`/company/billing`): "Current plan" "Free", "Sends this month: 3 of 3", 주황 "Limit reached. New payouts wait until you upgrade or the month renews." Nordwind는 Free 플랜으로 이달 3/3건을 소진한 상태라 여기서 페이롤을 돌리면 행마다 "Blocked · Plan"이 됩니다 → [12b. 구독 플랜과 Billing](#12b-구독-플랜과-billing).
 - [ ] `/company/wallets`는 두 조직 카드를 모두 보여주지만 "Add a wallet" 폼은 활성 조직 카드에만 있고 다른 카드는 "Switch to {org} in the header to add wallets or change its default."
 - [ ] Mia: 헤더에 `<select>` 대신 "Nordwind Labs" 텍스트만. 부제 "People Ops · Nordwind Labs".
 
@@ -599,6 +605,53 @@ Jordan Lee(Acme + Nordwind)로 로그인. 비교용으로 Mia Schulz(Nordwind만
 
 - `<select>`가 안 보이면 Mia처럼 조직이 하나뿐인 세션입니다. Jordan으로 로그인하세요.
 - 전환 후 Acme 데이터가 남아 보이면 3초 폴링 전 화면입니다. 잠시 기다리세요.
+
+---
+
+## 12b. 구독 플랜과 Billing
+
+### 목적
+
+보내는 조직의 구독 플랜(Free 월 3건 / Pro / Business 무제한)이 정산을 막는지, Free 한도를 넘긴 정산이 "Blocked · Plan"으로 보류되고 `/company/billing`에서 업그레이드(결제 시뮬레이션)하면 보류 건이 자동으로 재개되는지 확인합니다. 받는 쪽(워커)은 항상 무료입니다. 데모 대본 18단계와 같습니다.
+
+### 사전 조건
+
+리셋 완료. Jordan Lee로 로그인한 뒤 헤더 조직 `<select>`를 "Nordwind Labs"로 전환([12](#12-조직-전환)). 시드 플랜: Acme = Business(무제한, 이달 6건 전송, 11/12 갱신), Nordwind = Free(월 3건 중 3건 소진, 11/1 갱신). Alice·Dana가 verified(시드 기본).
+
+### 단계
+
+회사(Jordan, Nordwind):
+
+1. `/company/billing`(네비 "Billing")을 열어 "Current plan" 카드를 읽습니다.
+2. `/company/payroll` → "New payroll run"에 Alice·Dana 두 행 → "Run payroll now".
+3. 런 페이지의 행 배지와 "Settled" 카드 힌트를 확인합니다. 한 행을 클릭해 인보이스 상세의 배너·타임라인을 확인합니다.
+4. `/company`(대시보드) "Needs your attention"을 확인합니다.
+5. (선택) Alice Kim으로 로그인해 `/worker` "Upcoming"과 인보이스 상세를 본 뒤 다시 Jordan(Nordwind)으로 돌아옵니다.
+6. `/company/billing` → "Plans" 카드의 "Business" 칸에서 "Upgrade to Business"(카드 입력란은 비활성 샘플값).
+7. 런 페이지로 돌아가 헤더 배지가 "Completed"가 될 때까지 지켜봅니다.
+
+### 기대 결과
+
+- [ ] (전) Billing: 제목 "Billing", 설명 "The sending account pays a flat monthly fee. Receiving is always free."; "Current plan" 카드(부제 "Nordwind Labs") "Free", "$0 per month", "Renews {datetime}", "Sends this month: 3 of 3" + 주황 진행 막대(aria-label "Sends used this month"), 주황 안내 "Limit reached. New payouts wait until you upgrade or the month renews.", "Held payouts: 0". 오른쪽 "What per-transfer billing would have cost" 카드("{n} confirmed settlements this month", "Per-transfer fees" / "Your plan", 각주 "Fixed-rate premium (0.6%) and off-ramp fees stay outside the plan."). "Plans" 카드: "Free"("$0 per month", "Individuals and companies", "3 sends / month", "Included", 배지 "Current"), "Pro"("$9", "Individuals", "Unlimited sends", 버튼 "Upgrade to Pro"), "Business"("$99", "Companies", "Unlimited sends", 비활성 입력 "Card number" 4242 4242 4242 4242 / "Expiry" 12/28 / "CVC" 123, 버튼 "Upgrade to Business"); 각주 "Simulated checkout — no card is charged."
+- [ ] 페이롤 제출 → `/company/payroll/run_…`, 설명 "{datetime} · 2 workers · batch settlement contract", 배지 "Processing". 수 초 내 두 행 모두 배지 "Blocked · Plan"(주황), "Settled" "0 / 2" 힌트 "held by plan limit · see Billing"(링크).
+- [ ] 회사 인보이스 상세: 헤더 배지 "Blocked · Plan", 상단 주황 배너 "Held by your plan: Free allows 3 sends a month and all are used. Upgrade to send now, or wait until {datetime}."("Upgrade" 링크 → `/company/billing`), 타임라인 "Approved & scheduled" 아래 "Held by the sender's plan limit". "Retry settlement" 버튼 없음(플랜에 여유가 없으므로).
+- [ ] 회사 알림 "Monthly send limit reached (3 on Free)" / "{amount} for {worker} is on hold. Upgrade to keep sending this month."(→ `/company/billing`), 2건. 대시보드 "Needs your attention"에 "Alice Kim · held by plan limit", "Dana Kowalski · held by plan limit"(배지 "Blocked · Plan", → `/company/billing`); "In flight" 2.
+- [ ] Billing "Current plan" 카드에 "Held payouts: 2" + 보류 건 목록("{worker} · Payroll run" + 금액, → 인보이스 상세).
+- [ ] (Alice) `/worker` "Upcoming"에 "Nordwind Labs ₩1,900,000" + 부제 "On hold: company plan limit"; 인보이스 상세 주황 배너 "Your company's plan limit is holding this payout. It resumes as soon as they upgrade or the month renews."
+- [ ] "Upgrade to Business" → `/company/billing`으로 리다이렉트, "Current plan" "Business", "$99 per month", "Renews {오늘 + 30일}", "Sends this month: 3"(한도 없음, 진행 막대 없음), "Held payouts: 0"; "Business" 칸 버튼 "Current plan"(비활성) + 배지 "Current". 회사 알림 "Nordwind Labs is on Business" / "Unlimited sends. 2 held payouts resumed."(보류 건이 없었다면 "Unlimited sends from now on.").
+- [ ] 런 페이지: 행이 "Sending" → "Confirmed", "Settled" "2 / 2" 힌트 "complete", 배지 "Completed". 각 인보이스 "FX & settlement amount"의 "Fee" "0.00 USDC"(Business + spread), "Pricing"은 여전히 "Spread · 0.5% fee". 워커 알림 "You received …". 업그레이드 후 "Sends this month"는 5.
+- [ ] Free 조직이 마지막 한도 건을 쓰면 회사 알림 "Last free send of the month used" / "The next payout will wait until you upgrade or the month renews."(시드 Nordwind는 이미 3/3이라 리셋 직후에는 볼 수 없음).
+
+### 내부 동작
+
+플랜은 `org.plan = { tier, renewsAt, sendsThisMonth }`([src/lib/domain/plan.ts](../src/lib/domain/plan.ts): `PLANS` Free $0 · 3 sends/월, Pro $9 · 무제한, Business $99 · 무제한; `currentPlan`은 `renewsAt`이 지나면 카운터 0으로 갱신, 플랜이 없는 조직은 Free). `settleInvoice`는 KYC 확인 뒤 `canSend(plan)`이 false면 `blockedReason: "plan"`만 기록하고(status `scheduled` 유지) `invoice_blocked_plan` 알림을 보냅니다; confirmed 후 `recordSend`로 `sendsThisMonth += 1`, 남은 건수가 0이 되면 "Last free send of the month used" 알림. 수수료는 `planFeeUsdc(tier, mode, usdc)`: Free는 0.5% / 1.1% 전액, 유료는 spread 0 / fixed 0.6%(프리미엄만). `badgeStatus`([src/lib/domain/invoice-status.ts](../src/lib/domain/invoice-status.ts))가 `blockedReason === "plan"`이면 `blocked_plan` → 라벨 "Blocked · Plan". `/api/tick`은 `blockedReason`이 있는 건을 건너뜁니다. `upgradePlan`([src/lib/actions/billing.ts](../src/lib/actions/billing.ts)): `tier`가 `pro`/`business`가 아니면 "Choose a paid plan" 예외; `upgrade()`로 tier 변경 + `renewsAt = now + 30일`, 그 조직의 `scheduled + blockedReason "plan"` 인보이스 전부의 플래그를 지우고 `scheduleInvoice`(자동 재개), `plan_upgraded` 알림, `/company/billing`으로 리다이렉트. 회사 인보이스 상세의 "Retry settlement"는 플랜에 여유가 생긴 뒤(월 갱신 등)에도 보류 건을 수동 재개할 수 있습니다([10](#10-kyc-차단과-재시도)). Billing 페이지는 [src/app/(company)/company/billing/page.tsx](../src/app/(company)/company/billing/page.tsx). 스펙 [§5.2](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#52-scenario-2--currency-based-amount-fx-pricing-spread-or-fixed) "Plans", [§5.4](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#54-settlement-step-shared-by-both-scheduler-engines), [§6](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#6-screens) `/company/billing`.
+
+### 문제가 있다면
+
+- 페이롤 행이 "Blocked · Plan"이 아니라 바로 "Confirmed"면 이미 업그레이드된 상태(Business는 리셋 전까지 유지) → 리셋 후 다시.
+- "Upgrade to Business"를 눌렀는데 보류 건이 안 움직이면 workflow 모드 안전망(45초)을 기다리거나 인보이스 상세의 "Retry settlement"를 누르세요.
+- Acme에서는 이 경로를 볼 수 없습니다(Business, 무제한). Nordwind로 전환했는지 헤더 부제 "Finance Lead · Nordwind Labs"로 확인.
+- "That didn't go through" + "Choose a paid plan"은 `tier` 값이 유료가 아닐 때(폼을 조작한 경우)만 납니다.
 
 ---
 
@@ -632,7 +685,7 @@ Jordan Lee(Acme Remote). 오프보딩 대상 Bob Reyes가 활성이고 미결 �
 
 ### 기대 결과
 
-- [ ] 등록: 리다이렉트(토스트 없음) → 제목 "Mateo Ruiz", 설명 "mateo@settlivo.demo · ES · EUR", 헤더 배지 "Active"; "Payout settings" "KYC" 배지 "Pending", "Cadence" Monthly; "Wallets"에 "Settlivo wallet" + "Payout wallet" 배지, 잔액 0.00 USDC; "History" "No invoices yet."; "Link requests" "No requests yet.". 워커 테이블에 "Mateo Ruiz" 행(설명 "5 people across 5 countries"). Mateo 앞으로 알림 "Acme Remote invited you to Settlivo" / "Finish verification to receive payouts."
+- [ ] 등록: 리다이렉트(토스트 없음) → 제목 "Mateo Ruiz", 설명 "mateo@settlivo.demo · ES · EUR", 헤더 배지 "Active"; "Payout settings" "KYC" 배지 "Pending", "Cadence" Monthly; "Wallets"에 "Settlivo wallet" + "Payout wallet" 배지, 잔액 0.00 USDC; "History" "No invoices yet."; "Link requests" "No requests yet.". 워커 테이블(컬럼 "Name | Country | Payout | KYC | Since | Settlements", 행 끝 "Pay" 버튼 → 그 워커가 미리 선택된 `/company/invoices/new?worker={id}`)에 "Mateo Ruiz" 행(설명 "5 people across 5 countries"). Mateo 앞으로 알림 "Acme Remote invited you to Settlivo" / "Finish verification to receive payouts."
 - [ ] 같은 이메일로 다시 등록 → 변경 없이 기존 프로필로 리다이렉트.
 - [ ] 제거 거부(Carlos): "Remove without a final payment." 아래 "Settle or reject 1 open invoice first." 문구, "Remove from team" 비활성. (서버까지 도달하면 "That didn't go through" + 같은 메시지.)
 - [ ] 오프보딩(Bob): 리다이렉트 → 헤더 배지 "Offboarding"(깜빡임), "Offboarding" 카드 "Final settlement in progress · view the final invoice"(링크 → 최종 인보이스, memo "Final settlement", 배지 Scheduled/Sending). "New invoice" 버튼 사라짐.
@@ -728,7 +781,7 @@ Jordan Lee로 로그인(활성 조직 Acme Remote).
 
 ### 기대 결과
 
-- [ ] (Alice) 카드 설명 "Payouts go to the wallet marked Payout wallet. Changing it needs your company's approval."; 행 "Settlivo wallet"("Settlivo-custodied · USDC", 배지 "Payout wallet"), "Ledger (cold)"("External · USDC", 버튼 "Use for payouts"). 하단 "How you get paid" 카드 설명 "Your Settlivo wallet: 0xa11ce0…".
+- [ ] (Alice) 카드 설명 "Payouts go to the wallet marked Payout wallet. Changing it needs your company's approval."; 행 "Settlivo wallet"("Settlivo-custodied · USDC", 배지 "Payout wallet"), "Ledger (cold)"("External · USDC", 버튼 "Use for payouts"). 하단 "How you get paid" 카드 설명 "Your Settlivo wallet: 0xa11ce0000000000000000000000000000000a11c"(전체 주소, 축약 안 됨).
 - [ ] "Rabby" 추가 → 목록에 "Rabby" "Settlivo-custodied · USDC" 행, 토스트 없음. Jordan·Mia 알림 "Alice Kim added a wallet" / "Rabby (platform)"(→ `/company/workers/wrk_alice`). 회사 프로필 "Wallets" 카드에도 "Rabby".
 - [ ] "Use for payouts" → 그 행에 "Approval pending" 배지, 회사 알림 "Alice Kim changed payout wallet" / "Ledger (cold) (external). Needs approval.", `/company/approvals`에 Alice 카드.
 - [ ] (Jordan → Alice 요청) "Link requests" 목록에 "Bank account" + 배지 "Pending", 기본 메시지 "Please add a bank account for local payouts.", "Sent {datetime}". Alice 알림 "Acme Remote asked you to link a bank account"(→ `/worker/settings`). Alice 설정에서 이 요청은 "Accept"(은행이 이미 있으므로 활성) / "Decline"; 은행이 없는 워커는 "Accept" 비활성 + "Add your bank account below first".
@@ -769,13 +822,13 @@ Jordan Lee로 로그인(활성 조직 Acme Remote).
 
 ### 기대 결과
 
-- [ ] 서버 오류는 전체 화면 "That didn't go through" + 메시지("Select at least one worker", "Address must be a 0x… 40-hex address", "Insufficient balance (x.xx USDC)", "Settle or reject {n} open invoice(s) first", "Add a bank account in Settings first", "Worker not in organization", "Amount must be positive", "External address must be a 0x… 40-hex address") + "Try again" / "Go back". 메시지가 없으면 "Service unavailable. Check the Upstash and Workflow configuration."
+- [ ] 서버 오류는 전체 화면 "That didn't go through" + 메시지("Select at least one worker", "Address must be a 0x… 40-hex address", "Insufficient balance (x.xx USDC)", "Settle or reject {n} open invoice(s) first", "Add a bank account in Settings first", "Worker not in organization", "Amount must be positive", "External address must be a 0x… 40-hex address", "Choose a paid plan") + "Try again" / "Go back". 메시지가 없으면 "Service unavailable. Check the Upstash and Workflow configuration." 이 구체 메시지는 로컬 `npm run dev`에서만 보입니다. 프로덕션(Vercel)에서는 Next.js가 Server Action 오류의 메시지를 digest로 대체하므로 항상 "The server declined the request, for example a missing wallet address or an unreachable service. Try again or go back."가 표시됩니다.
 - [ ] 정산 실패 시 형태: 배지 "Failed"(빨강), 타임라인 빨간 "Failed" 행 + 오류, "Details"의 "Error" 행, 회사 알림 "Settlement failed for {worker}" / 오류 메시지, 회사 상세에 "Retry settlement"(→ `failed → scheduled`, 토스트 "Settlement restarted"). 워커 측에는 Retry 없음.
 - [ ] workflow 모드 안전망: 예약 시각 + 45초가 지나면 열린 페이지의 다음 폴링(3초)에서 `/api/tick`이 정산을 시작. tick 모드는 즉시.
 - [ ] 환율 fallback: 로그인 "Reference rates per USD"(라이브면 "Live rates per USD"), 워커 홈 "… · {rate} KRW/USD · fallback rate", 발행 폼 "Indicative rates (fallback): …". 기능은 그대로 동작.
-- [ ] fixed 만료 경로의 표시: FX 설명 "Rate was locked at issue for 24 h; past that window settlement falls back to the market rate at send.", 정산 후라면 "Applied rate … (lock expired, market rate used)"와 회사 알림 "Rate lock expired, settled at market" / "{amount} to {worker} was locked at {rate} until {datetime}; it settled at the market rate {rate} instead."(수수료는 여전히 1.1%).
-- [ ] 차단 인보이스는 `/api/tick`이 건너뛰며 "In flight"에 계속 집계됨; Retry 전까지 재시도 없음.
-- [ ] 멱등: 승인 API 재호출 응답의 상태가 그대로(`scheduled`/`confirmed`); "Retry settlement"는 `failed` 또는 blocked 상태에서만 효과.
+- [ ] fixed 만료 경로의 표시: FX 설명 "Rate was locked at issue for 24 h; past that window settlement falls back to the market rate at send.", 정산 후라면 "Applied rate … (lock expired, market rate used)"와 회사 알림 "Rate lock expired, settled at market" / "{amount} to {worker} was locked at {rate} until {datetime}; it settled at the market rate {rate} instead."(수수료율 `feeBps`는 110으로 유지되지만 실제 `feeUsdc`는 플랜 기준: Free 1.1%, 유료 0.6% 프리미엄만).
+- [ ] 차단 인보이스는 `/api/tick`이 건너뛰며 "In flight"에 계속 집계됨. KYC 차단(`blockedReason: "kyc"`) 건은 Retry 전까지 재시도되지 않습니다. 플랜 보류(`blockedReason: "plan"`) 건은 `/company/billing`에서 업그레이드하면 `upgradePlan`이 그 조직의 보류 건 전부의 플래그를 지우고 `scheduleInvoice`해 자동으로 재개됩니다(알림 "{org} is on Business" / "Unlimited sends. {n} held payouts resumed.", [12b](#12b-구독-플랜과-billing)).
+- [ ] 멱등: 승인 API 재호출 응답의 상태가 그대로(`scheduled`/`confirmed`); "Retry settlement"는 `failed`, KYC 차단(워커 verified), 플랜 보류(플랜에 여유가 생긴 뒤)에서만 렌더링·효과.
 - [ ] 오프보딩 중 워커의 "Offboard" 폼 숨김, 미결 인보이스가 있는 워커의 "Remove from team" 비활성.
 
 ### 내부 동작
@@ -815,7 +868,7 @@ Jordan Lee로 로그인(활성 조직 Acme Remote).
 { "approved": true, "by": "api", "reason": "optional reject reason" }
 ```
 
-- 동작: `approveInvoice(id, by, approved, reason)` — `pending_approval`일 때만 `scheduled`/`rejected`로 전이(멱등), 상대방 알림, workflow 모드면 훅 재개. 응답은 갱신된 인보이스 JSON. 존재하지 않는 ID면 `invoice {id} not found` 예외.
+- 동작: `approveInvoice(id, by, approved, reason)` — `pending_approval`일 때만 `scheduled`/`rejected`로 전이(멱등), 상대방 알림, workflow 모드면 훅 재개. 응답은 `{ "id": "inv_…", "status": "scheduled" }` 형태(갱신된 상태만, 전체 인보이스가 아님). 존재하지 않는 ID면 `invoice {id} not found` 예외.
 - 예:
 
 ```bash
@@ -835,14 +888,14 @@ curl -X POST https://settlivo.vercel.app/api/invoices/inv_xxxxxxxx/approve \
 { "counts": { "orgs": 2, "wallets": 12, "linkRequests": 1, "workers": 6, "invoices": 25, "txs": 23, "payrollRuns": 2, "withdrawals": 3, "notifications": 27, "fxHistory": 31 } }
 ```
 
-- 로컬 동등 명령: `npm run seed`(= `dotenv -e .env.local -- tsx scripts/seed.ts`, 항상 flush). 시드는 PRNG seed 20261024로 결정적이라 ID·해시·금액은 리셋마다 같고 날짜만 리셋 시각 기준으로 이동합니다(예: Carlos 요청 `inv_c611a9f8`, Eun 차단 건 `inv_f6e78376`).
+- 로컬 동등 명령: `npm run seed`(= `dotenv -e .env.local -- tsx scripts/seed.ts`, 항상 flush). 시드는 PRNG seed 20261024로 결정적이라 ID·tx 해시·환율·금액은 리셋마다 같고, 날짜(`scheduledAt`, `blockNumber`)와 그에 따라 달라지는 `invoiceHash`(sha256 입력에 `scheduledAt`이 포함됨)만 리셋 시각 기준으로 바뀝니다(예: Carlos 요청 `inv_c611a9f8` = 내일 09:24 UTC, Eun 차단 건 `inv_f6e78376` = 어제 09:11 UTC).
 - 소스: [src/app/api/seed/route.ts](../src/app/api/seed/route.ts), [src/lib/seed/index.ts](../src/lib/seed/index.ts), [src/lib/seed/generate.ts](../src/lib/seed/generate.ts), [scripts/seed.ts](../scripts/seed.ts). 스펙 [§7](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#7-seed-data).
 
 ### 저장소와 환경 변수
 
 - `getRedis()`([src/lib/db/redis.ts](../src/lib/db/redis.ts)): `KV_MODE`가 `file`/`upstash`면 그대로, 아니면 `UPSTASH_REDIS_REST_*` 또는 `KV_REST_API_*`가 있으면 Upstash, 없고 `VERCEL`이면 예외, 아니면 파일(`KV_FILE` 또는 `.data/kv.json`). 모든 읽기/쓰기는 [src/lib/db/repo.ts](../src/lib/db/repo.ts)를 거칩니다.
-- `CHAIN_MODE`, `SCHEDULER`는 호출 시점에 읽습니다(`chainMode()` / `schedulerMode()`). 나머지 변수 표는 [README.md](../README.md#stack), 스펙 [§10](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#10-configuration).
-- 참고로 코드가 읽지만 `.env.example`에 없는 변수: `KV_FILE`, `VERCEL`, `PLAYWRIGHT_BASE_URL`, `E2E_SCHEDULER`.
+- `CHAIN_MODE`, `SCHEDULER`는 호출 시점에 읽습니다(`chainMode()` / `schedulerMode()`). 나머지 변수 표는 [README.md "실행과 설정"](../README.md#실행과-설정), 스펙 [§10](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#10-configuration).
+- 참고로 코드가 읽지만 `.env.example`에 키로 없는 변수: `KV_FILE`, `VERCEL`, `PLAYWRIGHT_BASE_URL`, `E2E_SCHEDULER`, `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`(`KV_REST_API_*`보다 우선; `.env.example`에는 주석으로만 언급). `KV_MODE`도 주석 처리된 예시 줄로만 있습니다.
 
 ---
 
@@ -857,15 +910,15 @@ npm run e2e        # 데모 핵심 경로를 건드렸을 때
 
 | 명령 | 실행 내용 | 커버 범위 |
 | --- | --- | --- |
-| `npm test` (`vitest run`) | `src/**/*.test.ts` 12개 파일, 54개 테스트, 약 3초 | 인보이스 상태 머신(유효/무효 전이, history); 정산(`settle.test.ts`: KYC 차단, 기본 지갑·송금 시점 토큰, spread/fixed/만료 가격, 체인 오류 → failed, approve 멱등성, 훅 실패 시 새 run); 메모 calldata 라운드트립·`invoiceHash` 안정성; 시뮬레이션 체인(pending tx + 메모, 확인 시 잔액 반영); FX 변환(6dp 내림)·가격(bps, BigInt 수수료)·환율(fallback, drift ±0.3%); FileKv 파일 저장소; 멤버십·지갑 도메인; 금액 포맷; 지연 계산 |
+| `npm test` (`vitest run`) | `src/**/*.test.ts` 13개 파일, 58개 테스트, 약 3초 | 인보이스 상태 머신(유효/무효 전이, history); 정산(`settle.test.ts`: Free 플랜 한도 소진 시 `blockedReason: "plan"` → confirm 시 send 카운트, KYC 차단, 기본 지갑·송금 시점 토큰, spread/fixed/만료 가격, 체인 오류 → failed, approve 멱등성, 훅 실패 시 새 run); 구독 플랜(`plan.test.ts`: Free 3 sends/월·유료 무제한, 기간 만료 시 카운터 리셋·플랜 없는 조직은 Free, 플랜별 수수료); 메모 calldata 라운드트립·`invoiceHash` 안정성; 시뮬레이션 체인(pending tx + 메모, 확인 시 잔액 반영); FX 변환(6dp 내림)·가격(bps, BigInt 수수료)·환율(fallback, drift ±0.3%); FileKv 파일 저장소; 멤버십·지갑 도메인; 금액 포맷; 지연 계산 |
 | `npm run typecheck` (`tsc --noEmit`) | strict 타입 검사 | 전체 `src`, `scripts`, 설정 파일 |
 | `npm run build` (`next build`) | 프로덕션 빌드 + Workflow 빌드 | 라우트/서버 액션 컴파일, `"use workflow"` 파일 발견 여부(`src/workflows/invoice.ts`가 import 체인에서 빠지면 조용히 사라짐) |
-| `npm run e2e` (`playwright test`) | 시드 후 `next dev -p 3100`을 띄우고 [e2e/demo.spec.ts](../e2e/demo.spec.ts)의 17단계를 직렬로 실행(단일 chromium, 테스트당 180초) | [docs/demo-script.md](demo-script.md) 1–17단계: 로그인 → 대시보드 문구 → 인보이스 발행(75초 예약) → Alice 승인·Confirmed·"Verified"·탐색기 → 출금 100 USDC(Processing → 사라짐) → Approvals 두 건 → 페이롤 "3 / 3"·"Completed" → Eun 차단·KYC 3단계·Retry → 조직 전환 → 워커 등록(Mateo Ruiz) → 조직 지갑 "Bonus pool" → Bob 오프보딩 "Former" → Alice 지갑 "Rabby" |
+| `npm run e2e` (`playwright test`) | 시드 후 `next dev -p 3100`을 띄우고 [e2e/demo.spec.ts](../e2e/demo.spec.ts)의 18단계를 직렬로 실행(단일 chromium, 테스트당 180초) | [docs/demo-script.md](demo-script.md) 1–18단계: 로그인 → 대시보드 문구 → 인보이스 발행(75초 예약) → Alice 승인·Confirmed·"Verified"·탐색기 → 출금 100 USDC(Processing → 사라짐) → Approvals 두 건 → 페이롤 "3 / 3"·"Completed" → Eun 차단·KYC 3단계·Retry → 조직 전환 → 워커 등록(Mateo Ruiz) → 조직 지갑 "Bonus pool" → Bob 오프보딩 "Former" → Alice 지갑 "Rabby" → Nordwind 페이롤 "Blocked · Plan" → Billing "Upgrade to Business" → 런 "Completed" |
 
-E2E 환경(`playwright.config.ts`): `KV_MODE=file`, `KV_FILE=.data/kv-e2e.json`(개발용 `.data/kv.json`과 분리), `SCHEDULER=tick`(`E2E_SCHEDULER`로 덮어쓰기 가능), `CHAIN_MODE=simulated`, `SIM_CONFIRM_MS=500`, `FX_API_URL=http://127.0.0.1:9`(도달 불가 → fallback 환율 고정). 최초 1회 `npx playwright install chromium`. 프로덕션을 대상으로 돌리려면:
+E2E 환경(`playwright.config.ts`): `KV_MODE=file`, `KV_FILE=.data/kv-e2e.json`(개발용 `.data/kv.json`과 분리), `SCHEDULER=tick`(`E2E_SCHEDULER`로 덮어쓰기 가능), `CHAIN_MODE=simulated`, `SIM_CONFIRM_MS=500`, `FX_API_URL=http://127.0.0.1:9`(도달 불가 → fallback 환율 고정), `WORKFLOW_LOCAL_DATA_DIR=.workflow-data-e2e`, `WORKFLOW_LOCAL_RECOVER_ACTIVE_RUNS=0`(`workflow` 패키지가 읽는 로컬 run 저장소·복구 설정). 최초 1회 `npx playwright install chromium`. 프로덕션을 대상으로 돌리려면:
 
 ```bash
-PLAYWRIGHT_BASE_URL=https://settlivo.vercel.app SEED_SECRET=… npm run e2e   # 먼저 POST /api/seed로 리셋한 뒤 같은 17단계 수행
+PLAYWRIGHT_BASE_URL=https://settlivo.vercel.app SEED_SECRET=… npm run e2e   # 먼저 POST /api/seed로 리셋한 뒤 같은 18단계 수행
 ```
 
 유닛 테스트가 없는 영역(repo.ts, 시드, 서버 액션, 쿼리, 워크플로 파일, testnet 어댑터, React 컴포넌트)은 E2E로만 간접 검증됩니다. 수동 확인은 `npm run dev` 후 `/login`이 200, 비로그인 `/company`가 307 → `/login`인지 보는 것입니다. 스펙 [§9](superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#9-testing).
@@ -947,8 +1000,15 @@ PLAYWRIGHT_BASE_URL=https://settlivo.vercel.app SEED_SECRET=… npm run e2e   # 
 - [ ] `/notifications` "{n} total", 일자별 그룹, 열면 모두 읽음 처리
 
 **12. 조직 전환**
-- [ ] Jordan select → "Nordwind Labs" 대시보드·워커(Alice, Dana; Former Finn)·인보이스("Fixed" 배지)
+- [ ] Jordan select → "Nordwind Labs" 대시보드·워커(Alice, Dana; Former Finn)·인보이스("Fixed" 배지, 총 9건)
 - [ ] Mia는 select 없이 조직명 텍스트
+
+**12b. 구독 플랜과 Billing**
+- [ ] Nordwind `/company/billing` "Current plan" "Free", "Sends this month: 3 of 3", "Limit reached…"
+- [ ] Nordwind 페이롤 → 행 "Blocked · Plan", "Settled" 힌트 "held by plan limit · see Billing", 대시보드 "… · held by plan limit"
+- [ ] 회사 알림 "Monthly send limit reached (3 on Free)"; 워커 "On hold: company plan limit"
+- [ ] "Upgrade to Business" → "Current plan" "Business", 알림 "Nordwind Labs is on Business" / "… 2 held payouts resumed."
+- [ ] 런 "Completed", "Fee" 0.00 USDC
 
 **13. 워커 등록·제거·오프보딩**
 - [ ] "Add worker" → 프로필 "Active", KYC "Pending", "Settlivo wallet" 기본, 초대 알림
@@ -981,6 +1041,6 @@ PLAYWRIGHT_BASE_URL=https://settlivo.vercel.app SEED_SECRET=… npm run e2e   # 
 - [ ] `POST /api/seed` 헤더 없이 401, 있으면 `{counts: …}`
 
 **18. 자동 검증**
-- [ ] `npm test` 12 files / 54 tests pass
+- [ ] `npm test` 13 files / 58 tests pass
 - [ ] `npm run typecheck`, `npm run build` 통과
-- [ ] `npm run e2e` 17단계 통과
+- [ ] `npm run e2e` 18단계 통과

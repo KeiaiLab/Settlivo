@@ -1,10 +1,12 @@
-import { ArrowRight, Building2, ShieldCheck, User } from "lucide-react";
+import { ArrowRight, Building2, RotateCcw, ShieldCheck, User } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/shell/logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Money, Usdc } from "@/components/ui/money";
 import { currentRates } from "@/lib/actions/invoices";
+import { resetDemo } from "@/lib/actions/seed";
 import { loginAs } from "@/lib/actions/session";
 import { SUPPORTED_CURRENCIES } from "@/lib/domain/types";
 import { formatRate } from "@/lib/format";
@@ -13,9 +15,11 @@ import { PERSONAS } from "@/lib/seed/personas";
 import { getSession, homeFor } from "@/lib/session";
 
 /** Public landing + persona picker. The hero is the product's core artifact: one settled payout, priced at today's rate. */
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ reset?: string }> }) {
   const s = await getSession();
   if (s) redirect(homeFor(s));
+  const { reset } = await searchParams;
+  const needsSecret = !!process.env.SEED_SECRET;
   const rates = await currentRates();
   const sampleUsdc = toUsdc(4_200_000, "KRW", rates);
   const companies = PERSONAS.filter((p) => p.role === "company");
@@ -61,7 +65,15 @@ export default async function LoginPage() {
             <li>{rates.source === "live" ? "Live rates" : "Reference rates"} per USD</li>
           </ul>
         </div>
-        <p className="text-xs text-muted-foreground">Demo environment on Base Sepolia. No real funds move.</p>
+        <div className="space-y-2">
+          <form action={resetDemo} className="flex flex-wrap items-center gap-2">
+            {needsSecret && <Input name="secret" type="password" placeholder="Reset code" autoComplete="off" className="h-8 w-36 text-xs" aria-label="Reset code" />}
+            <Button type="submit" variant="outline" size="sm"><RotateCcw /> Reset demo data</Button>
+            {reset === "done" && <span className="text-xs text-emerald-300">Demo data reset. Sign in to start the walkthrough.</span>}
+            {reset === "denied" && <span className="text-xs text-rose-300">Wrong reset code.</span>}
+          </form>
+          <p className="text-xs text-muted-foreground">Demo environment on Base Sepolia. No real funds move. Reset restores the seeded companies, workers and history.</p>
+        </div>
       </section>
 
       <section className="flex flex-1 items-center justify-center p-6 lg:p-12">

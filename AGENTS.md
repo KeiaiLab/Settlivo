@@ -100,8 +100,9 @@ a demo-critical path run `npm run e2e` (Playwright, uses `KV_MODE=file`).
 - Small commits, pushed to `main` immediately. `main` auto-deploys to
   https://settlivo.vercel.app and teammates follow the repo during the event.
 - Never commit `.env*.local`, `.vercel/`, `tsconfig.tsbuildinfo`.
-- Reset demo data with `POST /api/seed` (header `x-seed-secret`), or
-  `npm run seed` locally.
+- Reset demo data with the "Reset demo data" button on `/login` (reset code =
+  `SEED_SECRET`), `POST /api/seed` (header `x-seed-secret`), or `npm run seed`
+  locally.
 
 ## Do not break (demo-critical)
 

@@ -1,7 +1,7 @@
 # Settlivo demo script (≈5 minutes)
 
 Production: https://settlivo.vercel.app
-Reset data between rehearsals:
+Reset data between rehearsals: sign out, then press **Reset demo data** at the bottom of `/login` and enter the reset code (`SEED_SECRET`). Equivalent from a shell:
 
 ```bash
 curl -X POST https://settlivo.vercel.app/api/seed -H "x-seed-secret: $SEED_SECRET" -d '{"flush":true}'

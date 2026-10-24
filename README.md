@@ -2,7 +2,7 @@
 
 > 스테이블코인과 블록체인으로 해외 기업과 원격 근무자 간 복잡한 대금 지급 절차를 간소화하고, 송금 시간과 수수료를 줄이는 글로벌 정산 플랫폼. 회사가 현지 통화로 인보이스를 발행하면 워커가 승인하고, 예약된 시각에 USDC로 자동 정산되며, 워커는 현지 통화로 출금한다. 모든 것은 기본적으로 시뮬레이션이다.
 
-**Production** https://settlivo.vercel.app · **튜토리얼** [docs/tutorial.md](docs/tutorial.md) · **데모 스크립트** [docs/demo-script.md](docs/demo-script.md) · **설계 스펙** [docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md) · **로드맵** [docs/roadmap.md](docs/roadmap.md) · **시장 분석** [docs/research/2026-10-24-market-competitive-analysis.md](docs/research/2026-10-24-market-competitive-analysis.md) · **기여 규칙** [AGENTS.md](AGENTS.md)
+**Production** https://settlivo.vercel.app · **튜토리얼** [docs/tutorial.md](docs/tutorial.md) · **데모 스크립트** [docs/demo-script.md](docs/demo-script.md) · **피치 덱** [docs/pitch/settlivo-pitch.pdf](docs/pitch/settlivo-pitch.pdf) · **설계 스펙** [docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md) · **로드맵** [docs/roadmap.md](docs/roadmap.md) · **시장 분석** [docs/research/2026-10-24-market-competitive-analysis.md](docs/research/2026-10-24-market-competitive-analysis.md) · **기여 규칙** [AGENTS.md](AGENTS.md)
 
 ## 목차
 
@@ -43,7 +43,7 @@
 **기대 효과**
 
 - 기업: 해외 급여 지급 업무 간소화 및 운영 비용 절감 (대시보드의 "Saved vs. bank wires" 위젯이 은행 송금 기준 `$35 + 2.2% FX spread, 4 business days` 대비 절감액을 계산)
-- 근무자: 더 빠르고 저렴하게 급여 수령 (Settlivo 수수료 0.5%, 정산 약 10분 vs 은행 3–5 영업일)
+- 근무자: 더 빠르고 저렴하게 급여 수령 (건당 수수료는 Free 플랜만 0.5%, 유료 플랜은 월정액이라 건당 0; 정산 약 10분 vs 은행 3–5 영업일)
 
 **데모 범위.** 이 저장소는 해커톤 데모 MVP다. 인증(비밀번호 없는 페르소나 선택), KYC, 온체인 전송, 오프램프는 모두 시뮬레이션이며, FX 환율만 실제 API에서 가져온다(실패 시 고정 fallback). 자세한 제한은 [알려진 한계와 다음 단계](#알려진-한계와-다음-단계) 참고.
 
@@ -58,10 +58,10 @@
 | 인보이스 발행 — 현지 통화 금액, FX `Spread`(0.5%) / `Fixed`(24 h 고정, 1.1%) 선택, 실시간 USDC 미리보기 | 회사 | `/company/invoices/new` | [§5.1](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#51-scenario-1--company-invoice--worker-approval--scheduled-payout), [§5.2](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#52-scenario-2--currency-based-amount-fx-pricing-spread-or-fixed) | [3. 인보이스 발행 (FX spread / fixed)](docs/tutorial.md#3-인보이스-발행-fx-spread--fixed) |
 | 워커 승인/거절 (`Approve` / `Reject` + 사유, 토스트 "Email sent to the counterparty.") | 워커 | `/worker`, `/worker/invoices/[id]` | [§5.1](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#51-scenario-1--company-invoice--worker-approval--scheduled-payout) | [4. 워커 승인과 예약 정산](docs/tutorial.md#4-워커-승인과-예약-정산) |
 | 예약 정산 + 타임라인 (Issued → Approved & scheduled → Settling on-chain → Confirmed) | 시스템 | `/company/invoices/[id]`, `/worker/invoices/[id]` | [§5.4](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#54-settlement-step-shared-by-both-scheduler-engines) | [4. 워커 승인과 예약 정산](docs/tutorial.md#4-워커-승인과-예약-정산) |
-| FX 비교 카드 (Quote rate at issue vs Executed rate at send, Change, Applied rate, Fee, 30-day sparkline) | 회사·워커 | 인보이스 상세 | [§5.2](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#52-scenario-2--currency-based-amount-fx-pricing-spread-or-fixed) | [5. FX 비교와 온체인 기록 검증](docs/tutorial.md#5-fx-비교와-온체인-기록-검증) |
+| FX 비교 카드 (`Quote rate (at issue)` vs `Executed rate (at send)`, Change, Applied rate, Fee, `30-day KRW/USD` sparkline) | 회사·워커 | 인보이스 상세 | [§5.2](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#52-scenario-2--currency-based-amount-fx-pricing-spread-or-fixed) | [5. FX 비교와 온체인 기록 검증](docs/tutorial.md#5-fx-비교와-온체인-기록-검증) |
 | 온체인 기록 검증 (`Verified` / `Mismatch`) + 인앱 익스플로러 (Decoded Settlivo memo) | 회사·워커 | 인보이스 상세, `/explorer/tx/[hash]` | [§5.6](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#56-on-chain-invoice-record) | [5. FX 비교와 온체인 기록 검증](docs/tutorial.md#5-fx-비교와-온체인-기록-검증) |
 | 출금 (오프램프 시뮬레이션, 0.5% 수수료, 은행 송금 비교표, Processing → Completed) | 워커 | `/worker/withdraw` | [§5.7](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#57-off-ramp-simulation) | [6. 출금 (오프램프)](docs/tutorial.md#6-출금-오프램프) |
-| 페이아웃 설정 변경 → 회사 승인 (PrefsDiff: Wallet / Stablecoin / Display currency / Cadence / Bank account) | 워커 → 회사 | `/worker/settings` → `/company/approvals` | [§5.3](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#53-scenario-3--worker-chooses-payout-conditions-company-approves) | [7. 페이아웃 설정 변경과 회사 승인](docs/tutorial.md#7-페이아웃-설정-변경과-회사-승인) |
+| 페이아웃 설정 변경 → 회사 승인/거절(사유) (PrefsDiff: Wallet / Stablecoin / Display currency / Cadence / Bank account; 거절은 `prefs_rejected` 알림) | 워커 → 회사 | `/worker/settings` → `/company/approvals` | [§5.3](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#53-scenario-3--worker-chooses-payout-conditions-company-approves) | [7. 페이아웃 설정 변경과 회사 승인](docs/tutorial.md#7-페이아웃-설정-변경과-회사-승인) |
 | 워커 결제 요청 → 회사 `Approve & schedule` | 워커 → 회사 | `/worker/request` → `/company/approvals` | [§5.3](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#53-scenario-3--worker-chooses-payout-conditions-company-approves) | [8. 워커 결제 요청](docs/tutorial.md#8-워커-결제-요청) |
 | 페이롤 런 (KYC 인증된 워커 일괄 지급, `Settled x / n`, 행 단위로 Confirmed) | 회사 | `/company/payroll`, `/company/payroll/[runId]` | [§5.5](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#55-payroll-run-batch) | [9. 페이롤 런](docs/tutorial.md#9-페이롤-런) |
 | KYC 차단 (`Blocked · KYC`) → 3단계 인증 위자드 → 회사의 `Retry settlement` | 워커 → 회사 | `/worker/onboarding`, `/company/invoices/[id]` | [§5.8](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#58-kyc-simulation), [§8](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#8-error-handling-and-fallbacks) | [10. KYC 차단과 재시도](docs/tutorial.md#10-kyc-차단과-재시도) |
@@ -70,7 +70,7 @@
 | 워커 등록 / 제거 / 오프보딩 (최종 정산 인보이스 → `Former`) | 회사 | `/company/workers`, `/company/workers/[id]` | [§5.11](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#511-worker-lifecycle) | [13. 워커 등록·제거·오프보딩](docs/tutorial.md#13-워커-등록제거오프보딩) |
 | 조직 지갑 (관리하는 모든 조직 × 지갑, Default / Make default, Add wallet) | 회사 | `/company/wallets` | [§5.12](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#512-wallets) | [14. 조직 지갑](docs/tutorial.md#14-조직-지갑) |
 | 워커 지갑 + 링크 요청 (회사가 지갑/은행 연결 요청, 워커가 수락/거절) | 워커·회사 | `/worker/settings`, `/company/workers/[id]` | [§5.12](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#512-wallets) | [15. 워커 지갑과 링크 요청](docs/tutorial.md#15-워커-지갑과-링크-요청) |
-| 구독 과금 — 보내는 계정이 구독(Free 월 3건 · Pro $9 · Business $99), 받는 쪽은 무료. Free 한도 초과 시 `Blocked · Plan` → Billing에서 업그레이드(결제 시뮬레이션) → 보류된 지급 재개. 고정 환율 프리미엄과 오프램프 수수료는 건별 유지 | 회사 | `/company/billing` | [§5.2](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#52-scenario-2--currency-based-amount-fx-pricing-spread-or-fixed) | — |
+| 구독 플랜 / 송금 한도 — 보내는 계정이 구독(Free `3 sends / month` · Pro $9 · Business $99, 유료는 `Unlimited sends`), 받는 쪽은 무료. Free 한도 소진 시 `Blocked · Plan` → `/company/billing`의 `Upgrade to Pro` / `Upgrade to Business`(카드 체크아웃 시뮬레이션) → 보류된 지급 자동 재개. 고정 환율 프리미엄과 오프램프 수수료는 건별 유지 | 회사 | `/company/billing` | [§5.2](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#52-scenario-2--currency-based-amount-fx-pricing-spread-or-fixed), [§6](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#6-screens) | — (시드의 Nordwind가 Free 3/3 소진 상태라 Mia로 로그인해 인보이스를 발행하면 바로 볼 수 있다) |
 | 실패 / 재시도 (`Failed` → `Retry settlement`, 45 s tick 안전망, 에러 페이지) | 회사 | `/company/invoices/[id]` | [§8](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#8-error-handling-and-fallbacks) | [16. 실패 처리와 안전장치](docs/tutorial.md#16-실패-처리와-안전장치) |
 | 데이터 리셋 (`POST /api/seed` + `x-seed-secret`, `npm run seed`) | 운영자 | `/api/seed` | [§7](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#7-seed-data) | [17. API와 데이터 리셋](docs/tutorial.md#17-api와-데이터-리셋) |
 
@@ -108,9 +108,9 @@
 - **Scheduler** — [`src/lib/scheduler/index.ts`](src/lib/scheduler/index.ts)의 `scheduleInvoice(id)` 뒤에 두 엔진이 있다.
   - `workflow`(기본): [`src/workflows/invoice.ts`](src/workflows/invoice.ts)가 인보이스마다 durable run 하나를 시작한다. `pending_approval`이면 hook `approve:{id}`를 기다리고, `scheduledAt`까지 `sleep`한 뒤 settle step을 실행한다. 승인 시 `resumeHook`을 최대 6회(500 ms 간격) 시도하고 실패하면 새 run을 시작한다.
   - `tick`: 예약 시점에는 아무 일도 하지 않고, [`GET /api/tick`](src/app/api/tick/route.ts)이 폴링마다 due 상태의 가장 오래된 인보이스 **1건**을 정산한다. 페이지가 열려 있지 않으면 정산되지 않는다.
-  - workflow 모드에서도 tick은 `scheduledAt`보다 45초 이상 지난 인보이스를 정산하는 안전망으로 동작한다. tick은 또한 생성 후 8초가 지난 `processing` 출금을 `completed`로 바꾼다.
+  - workflow 모드에서도 tick은 `scheduledAt`보다 45초 이상 지난 인보이스를 정산하는 안전망으로 동작한다. Workflow `start()`가 실패해도(`scheduleInvoice`는 경고 로그만 남기고 던지지 않는다) 인보이스는 이미 저장돼 있으므로 이 경로로 정산된다. tick은 또한 생성 후 8초가 지난 `processing` 출금을 `completed`로 바꾼다.
   - Workflow 빌더는 Next.js 엔트리포인트에서 도달 가능한 `"use workflow"` 파일만 발견한다. `src/workflows/invoice.ts` → `src/lib/scheduler` → [`src/app/api/invoices/[id]/approve/route.ts`](src/app/api/invoices/[id]/approve/route.ts) import 체인을 끊으면 워크플로가 빌드에서 조용히 사라진다.
-- **Settlement** — [`src/lib/settlement/settle.ts`](src/lib/settlement/settle.ts)의 `settleInvoice()`는 두 엔진이 공유한다. 순서: KYC 게이트 → `sending` → FX 조회(시뮬레이션 모드에서 ±0.3% drift) → 가격 산정 → 워커의 기본 지갑으로 `chain.transfer` (calldata에 메모) → `waitForConfirmation` → `confirmed` → 양쪽 알림. `sending` 이후 예외는 `failed` + 에러 메시지.
+- **Settlement** — [`src/lib/settlement/settle.ts`](src/lib/settlement/settle.ts)의 `settleInvoice()`는 두 엔진이 공유한다. 순서: KYC 게이트 → 플랜 게이트(조직 `plan`의 이번 달 송금 한도, 소진 시 `scheduled` + `blockedReason: "plan"`, 회사에 `invoice_blocked_plan` 알림 "Monthly send limit reached (3 on Free)" → `/company/billing`) → `sending` → FX 조회(시뮬레이션 모드에서 ±0.3% drift) → 가격 산정(`feeUsdc`는 `planFeeUsdc`, 유료 플랜은 spread 0) → 워커의 기본 지갑으로 `chain.transfer` (calldata에 메모) → `waitForConfirmation` → `confirmed` → 조직 `plan.sendsThisMonth` +1(Free 한도가 막 소진되면 "Last free send of the month used" 알림) → 양쪽 알림. `sending` 이후 예외는 `failed` + 에러 메시지.
 - **Chain adapter** — [`src/lib/chain/types.ts`](src/lib/chain/types.ts)의 `ChainAdapter` 인터페이스. `simulated`([`simulated.ts`](src/lib/chain/simulated.ts))는 무작위 32바이트 해시, 블록 번호 `21,400,000 + 카운터`, 가스 51,000–64,999, 2–5초 확인 지연(`SIM_CONFIRM_MS`)을 만들고 tx와 잔액을 KV에 저장해 인앱 익스플로러를 뒷받침한다. `testnet`([`testnet.ts`](src/lib/chain/testnet.ts))는 viem + Base Sepolia USDC, 플랫폼 핫월렛이 서명하며 USDT는 지원하지 않는다. 메모 코덱은 [`memo.ts`](src/lib/chain/memo.ts).
 - **FX service** — [`src/lib/fx/rates.ts`](src/lib/fx/rates.ts)가 `FX_API_URL`(기본 open.er-api.com, 2.5초 타임아웃)에서 USD 기준 환율을 가져오고 실패하면 [`fallback.ts`](src/lib/fx/fallback.ts)의 고정값(KRW 1385.2, PHP 58.4, BRL 5.42, PLN 3.98, VND 25310, EUR 0.921)을 쓴다. `fx:rates` 캐시는 live이고 10분 미만일 때만 재사용. 정산 때마다 `fx:history`에 포인트가 쌓여 30일 sparkline이 된다. 가격 규칙은 [`pricing.ts`](src/lib/fx/pricing.ts), 6자리 변환은 [`convert.ts`](src/lib/fx/convert.ts).
 
@@ -150,23 +150,25 @@ draft ─▶ pending_approval ─▶ scheduled ─▶ sending ─▶ confirmed
 ```
 
 - `draft`는 타입에만 있고 아무 코드도 만들지 않는다. 회사 인보이스와 워커 결제 요청은 `pending_approval`로, 페이롤 런과 오프보딩 최종 정산은 승인 없이 바로 `scheduled`로 생성된다.
-- 허용되지 않는 전이는 `Invalid invoice transition {from} -> {to}`를 던진다. 모든 전이는 `history[{status, at, by, note}]`에 쌓이며 `by`는 `org:{id}` / `worker:{id}` / `system:settlement` / `system:retry`.
-- **KYC 차단은 상태가 아니다.** 워커의 `kyc.status`가 `verified`가 아니면 인보이스는 `scheduled`에 머문 채 `blockedReason: "kyc"`가 찍히고 배지는 `Blocked · KYC`로 보인다. `/api/tick`은 `blockedReason`이 있는 인보이스를 건너뛴다. 워커가 인증을 마쳐도 자동 재시도는 없고, 회사가 `Retry settlement`를 눌러야 플래그가 지워진다. `scheduledAt`은 해시의 일부라 재시도 때도 바뀌지 않는다.
+- 허용되지 않는 전이는 `Invalid invoice transition {from} -> {to}`를 던진다. 모든 전이는 `history[{status, at, by, note}]`에 쌓이며 `by`는 `org:{id}` / `worker:{id}` / `system:settlement` / `system:retry`, 또는 `POST /api/invoices/[id]/approve`로 승인한 경우 본문 `by`(기본 `api`; 타임라인에 `api`로 표시).
+- **차단(`blockedReason: "kyc" | "plan"`)은 상태가 아니다.** 두 경우 모두 인보이스는 `scheduled`에 머물고 `/api/tick`은 `blockedReason`이 있는 인보이스를 건너뛴다. `scheduledAt`은 해시의 일부라 재시도 때도 바뀌지 않는다.
+  - `kyc`: 워커의 `kyc.status`가 `verified`가 아니면 찍히고 배지는 `Blocked · KYC`. 워커가 인증을 마쳐도 자동 재시도는 없고, 회사가 `Retry settlement`를 눌러야 플래그가 지워진다.
+  - `plan`: 보내는 조직의 플랜에 이번 달 송금 횟수가 남지 않으면 찍히고 배지는 `Blocked · Plan`. 대시보드 Needs your attention에는 `{이름} · held by plan limit`, 타임라인에는 `Held by the sender's plan limit`, 워커 홈에는 `On hold: company plan limit`, 페이롤 런의 `Settled` 카드 힌트에는 `held by plan limit · see Billing`, 회사 인보이스 상세에는 `Held by your plan: Free allows 3 sends a month and all are used. Upgrade to send now, or wait until {renewsAt}.`가 보인다. 해제는 회사가 `/company/billing`에서 업그레이드하면 보류 인보이스 전부가 자동으로 다시 예약되며(Retry 불필요), 한도가 남아 있을 때는 `Retry settlement`로도 지워진다.
 
 **FX 가격 산정** ([`src/lib/fx/pricing.ts`](src/lib/fx/pricing.ts), 스펙 [§5.2](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#52-scenario-2--currency-based-amount-fx-pricing-spread-or-fixed))
 
 | 항목 | `spread` (기본) | `fixed` |
 | --- | --- | --- |
 | 폼 옵션 문구 | `Spread · market rate at send · 0.5% fee` | `Fixed · lock today's rate for 24 h · 1.1% fee` |
-| 수수료 | 50 bps | 110 bps |
+| 건당 수수료(`feeBps`, Free 플랜 기준) | 50 bps | 110 bps |
 | 발행 시 기록 | `rateMode`, `feeBps`, `quoteRate` | + `lockedRate` (= 발행 시 환율), `lockExpiresAt` (= `scheduledAt` + 24 h) |
 | 정산 시 `appliedRate` | 송금 시점 시장 환율 | `now <= lockExpiresAt`이면 `lockedRate`, 아니면 시장 환율 + `lockExpired: true` |
 | `executedRate` | 항상 송금 시점 시장 환율 (Quote vs Executed 비교용) | 동일 |
 | `usdcAmount` | `floor(amount / appliedRate × 1e6) / 1e6` | 동일 |
-| `feeUsdc` | `floor(usdcAmount × feeBps / 10000)` (BigInt 마이크로 단위) | 동일. 락이 만료돼도 110 bps |
+| `feeUsdc` (`planFeeUsdc`) | Free 플랜: `floor(usdcAmount × feeBps / 10000)` (BigInt 마이크로 단위); Pro/Business: `0.000000` | Free: 동일, 락이 만료돼도 110 bps; Pro/Business: 60 bps(110 − 50) 프리미엄만 |
 | 락 만료 시 | — | 회사에 `Rate lock expired, settled at market` 알림, FX 카드에 `(lock expired, market rate used)` |
 
-`rateMode`가 없는 레코드(예: 오프보딩 최종 정산 인보이스)는 `spread`로 취급된다. 시뮬레이션 모드의 정산은 환율에 ±0.3% drift를 넣어 Quote/Executed 차이가 화면에 보이게 한다.
+`rateMode`가 없는 레코드(예: 오프보딩 최종 정산 인보이스)는 `spread`로 취급된다. 50/110 bps는 건당 요율이지만 실제로 청구되는 것은 Free 플랜뿐이다([`plan.ts`](src/lib/domain/plan.ts) `planFeeUsdc`); 시드의 Acme는 Business라 데모의 Acme spread 인보이스는 FX 카드에 `Fee 0.00 USDC`로 보이고, 대시보드 절감 위젯 각주도 "On a paid plan, per-transfer fees are 0."로 끝난다. 시뮬레이션 모드의 정산은 환율에 ±0.3% drift를 넣어 Quote/Executed 차이가 화면에 보이게 한다.
 
 **온체인 메모와 "Verified"** ([`src/lib/chain/memo.ts`](src/lib/chain/memo.ts), 스펙 [§5.6](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#56-on-chain-invoice-record))
 
@@ -180,7 +182,7 @@ draft ─▶ pending_approval ─▶ scheduled ─▶ sending ─▶ confirmed
 **금액 표현.**
 - USDC/USDT 금액은 저장소에서 항상 6자리 소수 문자열(`"3042.571428"`), 절대 float가 아니다. 현지 통화 금액은 number.
 - 화면 렌더링은 [`components/ui/money.tsx`](src/components/ui/money.tsx)(`Money`, `Usdc`) 또는 [`src/lib/format.ts`](src/lib/format.ts)(`formatMoney`, `formatUsdc`)만 거친다. USDC는 화면에서 2자리(툴팁에 6자리 전체), 현지 통화는 narrow symbol(₩, ₱, R$, zł, ₫), KRW/VND는 0자리. 테이블 셀 안에서는 통화 기호 왼쪽·숫자 오른쪽 정렬.
-- 환율은 `formatRate`: 100 초과면 2자리, 아니면 4자리 (`1,385.2 KRW/USD`, `0.921 EUR/USD`).
+- 환율은 `formatRate`: 100 초과면 최대 2자리, 아니면 최대 4자리(끝 0은 생략) (`1,385.2 KRW/USD`, `0.921 EUR/USD`).
 - 날짜는 `DEMO_TIMEZONE`(기본 `Asia/Seoul`)으로 `Oct 24, 02:05 PM` 형식.
 
 ## 화면과 라우트
@@ -193,15 +195,16 @@ draft ─▶ pending_approval ─▶ scheduled ─▶ sending ─▶ confirmed
 | `/login` | 공개 | 페르소나 선택기. 왼쪽은 샘플 "Settlement receipt"와 실시간/참조 환율, 오른쪽은 "Company admins" / "Workers" 카드. `Sign in with Google` 버튼은 `#accounts` 앵커로 스크롤만 한다 | [§2](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#2-users-and-personas) |
 | `/company` | 회사 | 대시보드: 4개 stat card, Recent invoices(최근 8건), Saved vs. bank wires, Needs your attention | [§6](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#6-screens) |
 | `/company/invoices` | 회사 | 인보이스 목록, 필터 `All` / `Open` / `Confirmed` / `Issues` (`?f=`) | [§6](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#6-screens) |
-| `/company/invoices/new` | 회사 | 인보이스 발행 폼 (Worker, Amount, Currency, Rate, Settle at = 지금 + 2분, Memo) | [§5.1](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#51-scenario-1--company-invoice--worker-approval--scheduled-payout), [§5.2](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#52-scenario-2--currency-based-amount-fx-pricing-spread-or-fixed) |
+| `/company/invoices/new` | 회사 | 인보이스 발행 폼 (Worker, Amount (local currency), Currency, Rate, Settle at = 지금 + 2분, Memo) | [§5.1](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#51-scenario-1--company-invoice--worker-approval--scheduled-payout), [§5.2](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#52-scenario-2--currency-based-amount-fx-pricing-spread-or-fixed) |
 | `/company/invoices/[id]` | 회사 | Timeline, FX & settlement amount, On-chain record, Details. 워커 요청이면 Approve/Reject, 실패·차단이면 Retry settlement | [§5.4](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#54-settlement-step-shared-by-both-scheduler-engines), [§5.6](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#56-on-chain-invoice-record) |
 | `/company/approvals` | 회사 | Payment requests (워커 발신 인보이스) + Payout setting changes (PrefsDiff) | [§5.3](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#53-scenario-3--worker-chooses-payout-conditions-company-approves) |
 | `/company/payroll` | 회사 | 페이롤 런 빌더(활성 워커 체크박스, 금액은 마지막 confirmed 인보이스로 프리필, Rate 1회 선택) + Past runs | [§5.5](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#55-payroll-run-batch) |
 | `/company/payroll/[runId]` | 회사 | `Settled x / n`, Total USDC, Saved vs bank wires, RunProgress 목록. 렌더링 시 run 상태를 `completed` / `partial`로 갱신 | [§5.5](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#55-payroll-run-batch) |
 | `/company/wallets` | 회사 | 세션이 관리하는 모든 조직 × 지갑 (Label, Address, Kind, Balance, Paid this month, Default / Make default). 활성 조직에만 Add a wallet 폼 | [§5.12](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#512-wallets) |
+| `/company/billing` | 회사 | Current plan(tier, `{$} per month`, `Renews {date}`, `Sends this month: n of 3` 진행바, `Held payouts: n` + 보류 인보이스 링크), What per-transfer billing would have cost(Per-transfer fees vs Your plan), Plans(Free `3 sends / month` · Pro $9 · Business $99 `Unlimited sends`, 카드 체크아웃 시뮬레이션 `Upgrade to {Plan}` → 보류 인보이스 자동 재개, `plan_upgraded` 알림 "{org} is on {Plan}") | [§5.2](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#52-scenario-2--currency-based-amount-fx-pricing-spread-or-fixed), [§6](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#6-screens) |
 | `/company/workers` | 회사 | 워커 테이블 (Country, Payout, KYC, Since, Settlements, Pay) + Add worker + Former workers | [§5.11](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#511-worker-lifecycle) |
 | `/company/workers/[id]` | 회사 | Payout settings, Wallets, Link requests(+ Send request), History, Offboarding (Offboard / Remove from team) | [§5.11](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#511-worker-lifecycle), [§5.12](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#512-wallets) |
-| `/worker` | 워커 | `Hi, {이름}`, KYC 배너, Available balance(현지 통화 + USDC), Upcoming, Needs your approval, Recent payouts | [§6](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#6-screens) |
+| `/worker` | 워커 | `Hi, {이름(first name)}`(`Hi, Alice`), KYC 배너(`Finish verification to receive payouts` · `{n} of 3 steps complete` · `Continue`), Available balance(현지 통화 + USDC), Upcoming, Needs your approval, Recent payouts | [§6](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#6-screens) |
 | `/worker/invoices/[id]` | 워커 | 회사 상세와 같은 카드(Timeline, FX, On-chain record). 회사 발신 `pending_approval`이면 Approve/Reject. 다른 워커의 인보이스는 404 | [§5.1](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#51-scenario-1--company-invoice--worker-approval--scheduled-payout) |
 | `/worker/request` | 워커 | 워커 발신 결제 요청 (Company, Amount, Rate, Preferred payout time, What is it for?) | [§5.3](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#53-scenario-3--worker-chooses-payout-conditions-company-approves) |
 | `/worker/withdraw` | 워커 | 오프램프 시뮬레이션: 금액 입력, Settlivo vs Bank wire 비교표, History | [§5.7](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#57-off-ramp-simulation) |
@@ -213,9 +216,11 @@ draft ─▶ pending_approval ─▶ scheduled ─▶ sending ─▶ confirmed
 | `GET /api/tick` | API | 클라이언트가 3초마다 호출. due 인보이스 1건 정산(tick 모드 즉시, workflow 모드는 45초 초과분만) + 8초 지난 출금 완료 처리. 응답 `{settled, withdrawalsCompleted}` | [§6](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#6-screens) |
 | `POST /api/seed` | API | 헤더 `x-seed-secret`이 `SEED_SECRET`과 같아야 함(아니면 401). 본문 `{flush?: boolean}` 기본 `true`. 응답 `{counts}` | [§7](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#7-seed-data) |
 
-상태 배지 문구 ([`status-badge.tsx`](src/components/ui/status-badge.tsx)): `Awaiting approval`, `Scheduled`, `Sending`, `Confirmed`, `Rejected`, `Failed`, `Blocked · KYC`, `Processing`, `Completed`, `Verified`, `Pending`, `Active`, `Offboarding`, `Former`, `Accepted`, `Declined`.
+헤더 내비게이션 문구 — 회사: `Dashboard` / `Invoices` / `Payroll` / `Wallets` / `Billing` / `Workers` / `Approvals`; 워커: `Home` / `Request payment` / `Withdraw` / `Settings`.
 
-토스트는 세 곳에서만 뜬다: Approve(`Approved` — `Email sent to the counterparty.`), Confirm reject(`Rejected` — 같은 설명), Retry settlement(`Settlement restarted`). Issue invoice, Add worker, Offboard, Send request, Add wallet 등은 토스트 없이 리다이렉트하거나 다시 렌더링된다. Server Action이 던진 에러는 [`src/app/error.tsx`](src/app/error.tsx)의 "That didn't go through" 페이지에 메시지와 함께 표시된다.
+상태 배지 문구 ([`status-badge.tsx`](src/components/ui/status-badge.tsx)): `Awaiting approval`, `Scheduled`, `Sending`, `Confirmed`, `Rejected`, `Failed`, `Blocked · KYC`, `Blocked · Plan`, `Processing`, `Completed`, `Verified`, `Pending`, `Active`, `Offboarding`, `Former`, `Accepted`, `Declined` (맵에는 `Draft`도 있지만 draft 인보이스를 만드는 코드가 없어 렌더링되지 않는다).
+
+토스트는 세 곳에서만 뜬다: Approve(`Approved` — `Email sent to the counterparty.`), Confirm reject(`Rejected` — 같은 설명), Retry settlement(`Settlement restarted`). Issue invoice, Add worker, Offboard, Send request, Add wallet 등은 토스트 없이 리다이렉트하거나 다시 렌더링된다. Server Action이 던진 에러는 [`src/app/error.tsx`](src/app/error.tsx)의 "That didn't go through" 페이지로 간다. 로컬 `next dev`에서는 던진 메시지(예: `Settle or reject 2 open invoices first`)가 그대로 보이고, 프로덕션 빌드에서는 Next.js가 메시지를 가리므로(`error.digest`) 고정 문구 "The server declined the request, for example a missing wallet address or an unreachable service. Try again or go back."만 보인다.
 
 ## 페르소나와 시드 데이터
 
@@ -223,10 +228,10 @@ draft ─▶ pending_approval ─▶ scheduled ─▶ sending ─▶ confirmed
 
 **조직**
 
-| 조직 | ID | 국가/통화 | KYB | 지갑 (잔액) | 활성 워커 |
-| --- | --- | --- | --- | --- | --- |
-| Acme Remote | `org_acme` | US / USD | verified | `Treasury` (platform, default, 48,250 USDC) · `Operations` (external, 12,500 USDC) | Alice, Bob, Carlos, Eun |
-| Nordwind Labs | `org_nordwind` | DE / EUR | verified | `Treasury` (platform, default, 21,900 USDC) · `EUR operations` (external, 4,200 USDC) | Alice, Dana (Finn은 former) |
+| 조직 | ID | 국가/통화 | KYB | 지갑 (잔액) | 플랜 | 활성 워커 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Acme Remote | `org_acme` | US / USD | verified | `Treasury` (platform, default, 48,250 USDC) · `Operations` (external, 12,500 USDC) | `Business` (Unlimited sends, 이번 달 6건, 2026-11-12 갱신) | Alice, Bob, Carlos, Eun |
+| Nordwind Labs | `org_nordwind` | DE / EUR | verified | `Treasury` (platform, default, 21,900 USDC) · `EUR operations` (external, 4,200 USDC) | `Free` (월 3건 중 3건 사용 = 한도 소진, 2026-11-01 갱신 → 새 정산은 `Blocked · Plan`, `/company/billing`에서 업그레이드하면 자동 재개) | Alice, Dana (Finn은 former) |
 
 **로그인 페르소나** (`/login`에 보이는 순서)
 
@@ -235,7 +240,7 @@ draft ─▶ pending_approval ─▶ scheduled ─▶ sending ─▶ confirmed
 | Jordan Lee — Finance Lead · Acme Remote | `admin_acme` | company | Acme Remote **+ Nordwind Labs** (조직 전환 가능, 첫 로그인은 Acme) | US | — | — | — |
 | Mia Schulz — People Ops · Nordwind Labs | `admin_nordwind` | company | Nordwind Labs | DE | — | — | — |
 | Alice Kim | `wrk_alice` | worker | Acme + Nordwind | KR · KRW | Verified | `Settlivo wallet` (platform, default) 2,400 USDC; 외부 `Ledger (cold)` | KB Kookmin ****2841 |
-| Bob Reyes | `wrk_bob` | worker | Acme | PH · PHP | Verified | 외부 `MetaMask` (default, USDT) 1,320.5 USDT; `Settlivo wallet` 420 USDC. 결제 주기 biweekly | BDO Unibank ****7730 |
+| Bob Reyes | `wrk_bob` | worker | Acme | PH · PHP | Verified | 외부 `MetaMask` (default, USDT) 1,320.5 USDT; `Settlivo wallet` (platform, USDT로 표기, 화면 잔액 0). 420 USDC가 USDC 키로 미리 적재돼 있어 회사가 Bob의 설정 변경을 승인하면(지갑이 USDC로 재태깅되고 Settlivo wallet이 payout 지갑이 됨) 워커 대시보드 Available balance가 420 USDC로 바뀐다. 결제 주기 biweekly | BDO Unibank ****7730 |
 | Carlos Mendes | `wrk_carlos` | worker | Acme | BR · BRL | Verified | `Settlivo wallet` 860 USDC | Nubank ****1190 |
 | Dana Kowalski | `wrk_dana` | worker | Nordwind | PL · PLN | Verified | `Settlivo wallet` 1,975.25 USDC | mBank ****5522 |
 | Eun Nguyen | `wrk_eun` | worker | Acme (2026-10-20 합류) | VN · VND | **KYC pending** (identity만 완료, 1/3) | `Settlivo wallet` 0 USDC, cadence per_invoice | 없음 (출금 불가) |
@@ -244,11 +249,12 @@ draft ─▶ pending_approval ─▶ scheduled ─▶ sending ─▶ confirmed
 **리셋 직후 상태** — 데모에서 "이미 벌어진 일"로 등장하는 항목들
 
 - 전체 카운트: orgs 2 · wallets 12 · linkRequests 1 · workers 6 · invoices 25 (confirmed 23) · txs 23 · payrollRuns 2 · withdrawals 3 · notifications 27 · fxHistory 31.
-- 이력: Acme 월급 배치 3회(64·34·4일 전; Alice ₩4,200,000, Bob ₱95,000, Carlos R$9,800), 뒤의 두 번은 `Past runs`에 Completed 페이롤 런으로 남음. Nordwind 월급 3회(Alice ₩1,900,000 **fixed** → 목록에 `Fixed` 배지, Dana zł12,500). 보너스성 인보이스 6건(`Sprint bonus`, `Contract milestone`, `Design retainer`, `On-call stipend`). 완료된 출금 3건(Alice 1,500 USDC, Bob 900, Dana 2,200).
+- 이력: Acme 월급 배치 3회(64·34·4일 전; Alice ₩4,200,000, Bob ₱95,000, Carlos R$9,800), 뒤의 두 번은 `Past runs`에 Completed 페이롤 런으로 남음. Nordwind 월급 3회(Alice ₩1,900,000 **fixed** → 목록에 `Fixed` 배지, Dana zł12,500). 보너스성 인보이스 6건(`Sprint bonus`, `Contract milestone`, `Design retainer`, `On-call stipend`). Finn Larsen(오프보딩)의 Nordwind 월급 2건(€4,100, 85·55일 전) — Nordwind 인보이스 목록과 Former workers 이력에 남음. 합계 confirmed 23 = 9 + 6 + 6 + 2. 완료된 출금 3건(Alice 1,500 USDC, Bob 900, Dana 2,200).
+- 플랜: Acme는 `Business`(이번 달 6건, 무제한), Nordwind는 `Free` 한도 3건을 이미 다 써서(`sendsThisMonth: 3`) 리셋 후 새로 발행한 Nordwind 인보이스(예: Mia 또는 Nordwind로 전환한 Jordan이 Dana에게 발행)는 정산 시점에 `Blocked · Plan`으로 보류되고, Nordwind 조직에 "Monthly send limit reached (3 on Free)" 알림이 온다. `/company/billing`에서 업그레이드해야 전송된다(2026-11-01 갱신 전까지).
 - Acme 대시보드 "Needs your attention"에 보이는 3건:
   - `Eun Nguyen · KYC pending` — ₫38,000,000 `Monthly salary`, 어제 예약, 상태 `scheduled` + `blockedReason: kyc` → 배지 `Blocked · KYC`.
   - `Bob Reyes changed payout settings` — 외부 MetaMask USDT → Settlivo wallet USDC로 바꾸는 `pendingPayoutPrefs`. `/company/approvals`의 PrefsDiff에서 승인.
-  - `Carlos Mendes requested payment` — 워커 발신 R$2,400 `Overtime: release weekend`, 내일 09:00 UTC 희망. `/company/approvals`에서 `Approve & schedule`.
+  - `Carlos Mendes requested payment` — 워커 발신 R$2,400 `Overtime: release weekend`, 내일 09:24 UTC(화면은 Asia/Seoul 기준 `06:24 PM`) 희망 — 분은 PRNG가 정한다. `/company/approvals`에서 `Approve & schedule`.
 - Acme → Bob 링크 요청 1건 pending: "Please link a USDC wallet for the Q4 bonus run." (Bob의 `/worker/settings`에 표시).
 - 알림: Acme 조직 12건(7건 미읽음), Alice 5(1), Bob 4(1), Carlos 3(1), Nordwind 1(0), Dana 1(0), Eun 1(1: "Complete verification to receive ₫38,000,000").
 - `fx:rates`는 `source: fallback`으로 저장되므로 첫 화면 로드 때 live 환율을 다시 가져온다(성공하면 "Live rates per USD", 실패하면 "Reference rates per USD").
@@ -280,13 +286,13 @@ npm run dev                  # http://localhost:3000 → /login
 **검증**
 
 ```bash
-npm test                     # Vitest: 12 파일, 54 테스트 (~3 s)
+npm test                     # Vitest: 13 파일, 58 테스트 (~3 s)
 npm run typecheck            # tsc --noEmit
 npm run build                # next build (Workflow 빌드 포함)
-npm run e2e                  # Playwright: docs/demo-script.md 17단계 (최초 1회: npx playwright install chromium)
+npm run e2e                  # Playwright: docs/demo-script.md 18단계 (최초 1회: npx playwright install chromium)
 ```
 
-`npm run e2e`는 [`playwright.config.ts`](playwright.config.ts)가 `npx tsx scripts/seed.ts && npx next dev -p 3100`을 `KV_MODE=file`, `KV_FILE=.data/kv-e2e.json`, `SCHEDULER=tick`(`E2E_SCHEDULER`로 override), `CHAIN_MODE=simulated`, `SIM_CONFIRM_MS=500`, 도달 불가한 `FX_API_URL`(fallback 환율 강제)로 띄운 뒤 [`e2e/demo.spec.ts`](e2e/demo.spec.ts)를 단일 chromium 워커로 직렬 실행한다. `PLAYWRIGHT_BASE_URL`을 주면 로컬 서버 대신 그 주소를 `POST /api/seed`로 리셋하고 테스트한다. 단위 테스트는 [`vitest.config.ts`](vitest.config.ts) 기준 `src/**/*.test.ts`(memo/hash, simulated chain, FileKv, 상태 머신, membership, wallets, FX convert/pricing/rates, format, settle/approve, delay).
+`npm run e2e`는 [`playwright.config.ts`](playwright.config.ts)가 `npx tsx scripts/seed.ts && npx next dev -p 3100`을 `KV_MODE=file`, `KV_FILE=.data/kv-e2e.json`, `SCHEDULER=tick`(`E2E_SCHEDULER`로 override), `CHAIN_MODE=simulated`, `SIM_CONFIRM_MS=500`, 도달 불가한 `FX_API_URL`(fallback 환율 강제), `WORKFLOW_LOCAL_DATA_DIR=.workflow-data-e2e`, `WORKFLOW_LOCAL_RECOVER_ACTIVE_RUNS=0`(Workflow 로컬 상태를 dev 디렉터리와 분리하고 오래된 run의 재개를 막음)로 띄운 뒤 [`e2e/demo.spec.ts`](e2e/demo.spec.ts)를 단일 chromium 워커로 직렬 실행한다. `PLAYWRIGHT_BASE_URL=https://… SEED_SECRET=… npm run e2e`처럼 주소를 주면 로컬 서버 대신 그 주소를 `POST /api/seed`로 리셋하고 테스트한다 — `SEED_SECRET`은 리셋 헤더 `x-seed-secret`에 쓰이므로 비어 있으면 401로 전부 실패한다. 단위 테스트는 [`vitest.config.ts`](vitest.config.ts) 기준 `src/**/*.test.ts`(memo/hash, simulated chain, FileKv, 상태 머신, membership, wallets, plan(구독 플랜·월 전송 한도), FX convert/pricing/rates, format, settle/approve(플랜 게이트 포함), delay).
 
 **환경 변수** ([`.env.example`](.env.example), 스펙 [§10](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#10-configuration))
 
@@ -294,14 +300,14 @@ npm run e2e                  # Playwright: docs/demo-script.md 17단계 (최초 
 | --- | --- | --- | --- |
 | `CHAIN_MODE` | `simulated` \| `testnet` | `simulated` | `chainMode()` 호출 시점 |
 | `SCHEDULER` | `workflow` \| `tick` | `workflow` | `schedulerMode()` 호출 시점, `/api/tick` |
-| `SEED_SECRET` | 임의 문자열; `POST /api/seed` 보호 | — (미설정이면 항상 401) | `api/seed` |
+| `SEED_SECRET` | 임의 문자열; `POST /api/seed` 보호; also the reset code for the Reset demo data button on `/login` | — (미설정이면 항상 401) | `api/seed` |
 | `KV_REST_API_URL` / `KV_REST_API_TOKEN` | Upstash 통합이 주입 (`UPSTASH_REDIS_REST_*`도 허용, 우선) | — | `getRedis()` |
 | `KV_MODE` | `auto` \| `file` \| `upstash`; `file` = `.data/kv.json` JSON 저장소. Upstash 변수가 없으면 자동으로 file | `auto` | `getRedis()` |
-| `KV_FILE` | 파일 저장소 경로 override (e2e가 `.data/kv-e2e.json`으로 사용) | `<cwd>/.data/kv.json` | `getRedis()` |
+| `KV_FILE` | 파일 저장소 경로 override (e2e가 `.data/kv-e2e.json`으로 사용). `KV_MODE`가 file로 결정됐을 때만 적용. `.env.example`에는 없다 | `<cwd>/.data/kv.json` | `getRedis()` |
 | `FX_API_URL` | USD 기준 `{ rates }`를 돌려주는 키 없는 FX 엔드포인트 | `https://open.er-api.com/v6/latest/USD` | `getRates()` |
 | `SIM_CONFIRM_MS` | 시뮬레이션 체인 확인 지연(ms) | 무작위 2–5 s | `SimulatedChain.waitForConfirmation` |
 | `DEMO_TIMEZONE` | 서버 렌더링 시각의 IANA 존 (Vercel은 UTC) | `Asia/Seoul` | `formatDateTime` |
-| `BASE_SEPOLIA_RPC_URL`, `PLATFORM_PRIVATE_KEY`, `USDC_ADDRESS` | testnet 모드 전용. `USDC_ADDRESS`와 `PLATFORM_PRIVATE_KEY`가 없으면 `{NAME} is required for CHAIN_MODE=testnet` | RPC `https://sepolia.base.org`, USDC `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | `TestnetChain` |
+| `BASE_SEPOLIA_RPC_URL`, `PLATFORM_PRIVATE_KEY`, `USDC_ADDRESS` | testnet 모드 전용. `USDC_ADDRESS`와 `PLATFORM_PRIVATE_KEY`가 없으면 `{NAME} is required for CHAIN_MODE=testnet` | RPC 미설정 시 viem `baseSepolia` 기본 RPC(`https://sepolia.base.org`); `USDC_ADDRESS`·`PLATFORM_PRIVATE_KEY`는 코드 기본값 없음(필수). `.env.example`의 `0x036CbD53842c5426634e7929541eC2318f3dCF7e`는 Base Sepolia USDC 샘플값 | `TestnetChain` |
 
 **KV 모드.** `KV_MODE`가 정확히 `file` 또는 `upstash`면 그대로, 아니면 자격 증명이 있을 때 Upstash, 없고 `VERCEL`이 설정돼 있으면 에러(`Upstash Redis is not configured: …`), 그 외는 file. 파일 저장소([`kv.ts`](src/lib/db/kv.ts))는 `{kv, sets, lists}` 하나의 JSON 문서를 매 연산마다 읽고 원자적으로(tmp + rename) 다시 쓰므로 여러 프로세스가 공유해도 일관된다. 클라이언트는 모듈 싱글턴이라 모드를 바꾸면 프로세스를 재시작해야 한다. `.data/`는 git-ignored.
 
@@ -325,9 +331,9 @@ npm run e2e                  # Playwright: docs/demo-script.md 17단계 (최초 
 
 | 경로 | 역할 |
 | --- | --- |
-| [`src/app`](src/app) | 라우트: `(company)/company/*`, `(worker)/worker/*`, `login`, `notifications`, `explorer/tx/[hash]`, `api/{tick,seed,invoices/[id]/approve}`, 루트 `page.tsx`(리다이렉트), `layout.tsx`(dark 테마 + Sonner Toaster), `error.tsx` |
+| [`src/app`](src/app) | 라우트: `(company)/company/*`(dashboard, invoices, approvals, payroll, wallets, billing, workers), `(worker)/worker/*`, `login`, `notifications`, `explorer/tx/[hash]`, `api/{tick,seed,invoices/[id]/approve}`, 루트 `page.tsx`(리다이렉트), `layout.tsx`(dark 테마 + Sonner Toaster), `error.tsx` |
 | [`src/proxy.ts`](src/proxy.ts) | 쿠키 없는 `/company/*`, `/worker/*`, `/notifications` 요청을 `/login`으로 307 |
-| [`src/lib/domain`](src/lib/domain) | `types.ts`(온톨로지 타입), `ids.ts`(`newId()`), `invoice-status.ts`(상태 머신 `transition`), `membership.ts`, `wallets.ts` |
+| [`src/lib/domain`](src/lib/domain) | `types.ts`(온톨로지 타입), `ids.ts`(`newId()`), `invoice-status.ts`(상태 머신 `transition`, `badgeStatus`), `membership.ts`, `wallets.ts`, `plan.ts`(구독 플랜 `PLANS`·월 전송 한도 `canSend`·`planFeeUsdc`) |
 | [`src/lib/db`](src/lib/db) | 저장소를 만지는 유일한 모듈. `redis.ts`(`getRedis()`: Upstash 또는 파일), `kv.ts`(FileKv), `repo.ts`(API) |
 | [`src/lib/fx`](src/lib/fx) | `rates.ts`(live fetch + drift), `fallback.ts`(고정 환율), `convert.ts`(6자리 USDC 변환), `pricing.ts`(spread/fixed) |
 | [`src/lib/chain`](src/lib/chain) | `types.ts`(`ChainAdapter`), `index.ts`(`chainMode()`, `getChain()`), `simulated.ts`, `testnet.ts`(viem/Base Sepolia), `memo.ts`(calldata 메모 코덱 + `invoiceHash`) |
@@ -335,13 +341,13 @@ npm run e2e                  # Playwright: docs/demo-script.md 17단계 (최초 
 | [`src/lib/scheduler`](src/lib/scheduler) | `index.ts`(`scheduleInvoice`, `approveInvoice`, `retryInvoice`, `schedulerMode()`), `delay.ts` |
 | [`src/workflows/invoice.ts`](src/workflows/invoice.ts) | `"use workflow"` durable run (hook → sleep → settle) |
 | [`src/lib/seed`](src/lib/seed) | `personas.ts`(고정 ID 페르소나·조직·지갑), `generate.ts`(결정적 이력), `index.ts`(`seedAll`) |
-| [`src/lib/actions`](src/lib/actions) | Server Actions(`"use server"` 파일은 async 함수만 export). `session.ts`, `invoices.ts`, `approvals.ts`, `payroll.ts`, `worker.ts`(승인·요청·출금·KYC·페이아웃 설정), `workers.ts`(등록/제거/오프보딩, 링크 요청), `wallets.ts`(조직·워커 지갑, 페이아웃 지갑, 링크 응답) |
+| [`src/lib/actions`](src/lib/actions) | Server Actions(`"use server"` 파일은 async 함수만 export). `session.ts`, `invoices.ts`, `approvals.ts`, `payroll.ts`, `worker.ts`(승인·요청·출금·KYC·페이아웃 설정), `workers.ts`(등록/제거/오프보딩, 링크 요청), `wallets.ts`(조직·워커 지갑, 페이아웃 지갑, 링크 응답), `billing.ts`(`upgradePlan`: 플랜 업그레이드 시뮬레이션, 보류 인보이스 해제) |
 | [`src/lib/queries`](src/lib/queries) | 페이지 데이터 로더 `company.ts`(`companyContext`), `worker.ts`(`workerContext`) |
-| [`src/lib/session.ts`](src/lib/session.ts), [`src/lib/format.ts`](src/lib/format.ts) | 세션 쿠키 읽기/역할 가드, 금액·환율·날짜 포맷 |
+| [`src/lib/session.ts`](src/lib/session.ts), [`src/lib/format.ts`](src/lib/format.ts), [`src/lib/utils.ts`](src/lib/utils.ts) | 세션 쿠키 읽기/역할 가드, 금액·환율·날짜 포맷, `cn()` 클래스 병합 |
 | [`src/components/ui`](src/components/ui) | shadcn(base-nova) 프리미티브 + `money.tsx`, `status-badge.tsx`, `local-datetime.tsx`. import되지 않는 파일은 두지 않는다 |
-| [`src/components`](src/components) | 앱 컴포넌트: `shell`(header, nav, logo, poller, org switcher, bell, persona badge, page), `invoices`(table, timeline, fx-comparison, onchain-record, approve/retry buttons, amount-field), `worker`(kyc-banner, kyc-wizard, withdraw-form), `dashboard`, `payroll`, `approvals`(prefs-diff) |
+| [`src/components`](src/components) | 앱 컴포넌트: `shell`(header, nav, logo, poller, org switcher, bell, persona badge, page), `invoices`(table, timeline, fx-comparison, sparkline, onchain-record, approve/retry buttons, amount-field), `worker`(kyc-banner, kyc-wizard, withdraw-form), `dashboard`, `payroll`, `approvals`(prefs-diff) |
 | [`src/hooks/use-poll.ts`](src/hooks/use-poll.ts) | 3초 폴링 훅 |
-| [`e2e/demo.spec.ts`](e2e/demo.spec.ts), [`playwright.config.ts`](playwright.config.ts) | 데모 스크립트 17단계 자동화 |
+| [`e2e/demo.spec.ts`](e2e/demo.spec.ts), [`playwright.config.ts`](playwright.config.ts) | 데모 스크립트 18단계 자동화 |
 | [`scripts/seed.ts`](scripts/seed.ts) | `seedAll({flush: true})` CLI |
 | [`docs/`](docs) | 아래 [문서 지도](#문서-지도) |
 
@@ -355,14 +361,15 @@ npm run e2e                  # Playwright: docs/demo-script.md 17단계 (최초 
 | [docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md) | **설계 스펙 = 동작의 원본(source of truth).** 페르소나, 아키텍처, 데이터 모델, 핵심 흐름 §5.1–5.12, 화면 §6, 시드 §7, 에러 처리 §8, 테스트 §9, 설정 §10 | 동작이 "의도된 것인지" 확인할 때. 동작·라우트·데이터 형태·env·상태를 바꾸면 같은 커밋에서 해당 절을 고친다 |
 | [docs/demo-script.md](docs/demo-script.md) | 심사위원용 **5분 클릭 스크립트**(13단계 + 온톨로지 확장 4단계), 리셋 curl, 직접 실행 명령 | 발표 리허설, 데모 직전 |
 | [docs/tutorial.md](docs/tutorial.md) | **기능별 검증 가이드.** 각 기능을 어떤 페르소나로, 어디서, 무엇을 눌러, 무엇이 보여야 하는지 단계별로 | 기능을 하나씩 직접 확인할 때, 리뷰어·신규 팀원 온보딩 |
-| [docs/roadmap.md](docs/roadmap.md) | **미래 방향(구현되지 않음).** 구독 과금, internal 레일 + 온체인 앵커링, 개인→개인 송금, 실자금 전환 전제조건 | 다음 단계를 논의할 때. 스펙으로 옮기기 전에는 여기서 구현하지 않는다 |
+| [docs/roadmap.md](docs/roadmap.md) | **미래 방향(구현되지 않음).** 1단계 구독 과금은 시뮬레이션으로 출시돼 스펙 §5.2 Plans / §6 `/company/billing`으로 옮겨졌고 로드맵에서 지워졌다. 남은 단계: internal 레일 → 온체인 앵커링 → 개인→개인 송금 → Payout Pool(시급·일급 적립 후 워커가 Claim) → 실자금 전환 전제조건 | 다음 단계를 논의할 때. 스펙으로 옮기기 전에는 여기서 구현하지 않는다 |
+| [docs/pitch/settlivo-pitch.pdf](docs/pitch/settlivo-pitch.pdf) ([HTML 원본](docs/pitch/settlivo-pitch.html), [render.mjs](docs/pitch/render.mjs)로 PDF 생성, 화면 캡처 `docs/pitch/shots/`) | 심사위원용 2쪽 피치 덱 | 발표 직전 |
 | [docs/research/2026-10-24-market-competitive-analysis.md](docs/research/2026-10-24-market-competitive-analysis.md) | 시장·경쟁 분석 (경쟁사, 아시아 고용주·수령자 분석, 오프램프, 권장 사항). `main @ 21214fa` 시점 스냅샷이라 §5의 "환율 위험" 항목은 spread/fixed 도입 이전 기준 | 피치 근거, 포지셔닝 |
 | [AGENTS.md](AGENTS.md) | **기여 규칙.** 소스 오브 트루스 순서, 레이아웃, 관례, 죽은 코드·문서 위생 점검, 커밋 전 검증, git 규칙, 깨뜨리면 안 되는 데모 경로 | 코드를 고치기 전 |
 
 문서 간 관계:
 
 - 스펙이 의도된 동작을 기술하고 코드가 그것을 구현한다. **README와 demo-script는 스펙과 일치해야 하며**, 불일치가 생기면 같은 커밋에서 셋을 함께 고친다. 튜토리얼은 코드가 실제로 보여주는 것을 기준으로 쓴다.
-- `docs/superpowers/plans/*`는 실행 계획이다. 실행이 끝난 계획은 삭제 대상이며 현재 문서로 취급하지 않는다. 로드맵도 현재 동작이 아니다.
+- `docs/superpowers/plans/*`는 실행 계획이다. 실행이 끝난 계획은 삭제 대상이며 현재 문서로 취급하지 않는다(현재 `2026-10-24-settlivo-demo-mvp.md` 하나가 남아 있다). 로드맵도 현재 동작이 아니다.
 - 스펙 §6의 라우트 목록과 `src/app`의 라우트, `.env.example`과 `process.env.*` 사용, `package.json` 의존성과 import는 양방향으로 일치해야 한다.
 
 ## 알려진 한계와 다음 단계
@@ -388,4 +395,4 @@ npm run e2e                  # Playwright: docs/demo-script.md 17단계 (최초 
 - 출금의 잔액 검사는 `payoutPrefs` 주소를, 화면의 잔액은 기본 Wallet 엔티티 주소를 읽는다. 시드 데이터에서는 둘이 같다.
 - tick 모드에서는 페이지가 열려 있어야 정산이 진행된다. 데모 중 탭을 닫지 않는다.
 
-**다음 단계**는 [docs/roadmap.md](docs/roadmap.md)에 있다: 구독 과금 모델 → internal 레일 → 온체인 앵커링 → 개인→개인 송금 → 실자금 전환 전제조건(실제 KYC/KYB, 라이선스 오프램프, 키 관리). 로드맵의 단계를 구현하려면 먼저 그 단계를 스펙으로 옮기고, 출시되면 로드맵에서 지운다.
+**다음 단계**는 [docs/roadmap.md](docs/roadmap.md)에 있다. 1단계 구독 과금 모델은 시뮬레이션으로 구현됐다(플랜 게이트 + `/company/billing`, 결제는 가짜 카드). 남은 순서: internal 레일 → 온체인 앵커링 → 개인→개인 송금 → Payout Pool(시급·일급 수시 수령) → 실자금 전환 전제조건(실제 KYC/KYB, 라이선스 오프램프, 키 관리). 로드맵의 단계를 구현하려면 먼저 그 단계를 스펙으로 옮기고, 출시되면 로드맵에서 지운다.
