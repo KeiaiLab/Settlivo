@@ -29,3 +29,12 @@
 
 - 기업: 해외 급여 지급 업무 간소화 및 운영 비용 절감
 - 근무자: 더 빠르고 저렴하게 급여 수령
+
+## Run locally
+
+```bash
+npm install
+cp .env.example .env.local   # fill Upstash vars (vercel env pull .env.local)
+npm run dev
+npm test
+```
