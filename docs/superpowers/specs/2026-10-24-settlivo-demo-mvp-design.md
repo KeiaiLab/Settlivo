@@ -64,6 +64,8 @@ Components:
     in-app explorer.
   - `testnet`: viem + Base Sepolia + Circle test USDC. Platform hot wallet
     signs all transfers. Implemented, only enabled if time allows.
+    USDT has no official testnet token, so testnet mode supports USDC only;
+    the simulated adapter supports both.
 - **FX service** — free keyless FX API with hardcoded fallback rates.
 
 Vercel surface used: Hosting, Workflow, Marketplace (Upstash), env vars,
@@ -84,7 +86,8 @@ worker:{id}         { id, name, email, country, localCurrency, avatarInitials,
                       steps: {identity, address, tax}, verifiedAt },
                       platformWallet: address,
                       payoutPrefs: { wallet: platform|external,
-                        externalAddress?, displayCurrency, cadence:
+                        externalAddress?, stablecoin: USDC|USDT,
+                        displayCurrency, cadence:
                         monthly|biweekly|per_invoice, bankAccount?: {…} },
                       pendingPayoutPrefs?: same shape + submittedAt }
 workers             Set<workerId>
@@ -100,7 +103,7 @@ org:{id}:invoices   Set<invoiceId>
 worker:{id}:invoices Set<invoiceId>
 
 payrollrun:{id}     { id, orgId, invoiceIds[], status, createdAt }
-tx:{id}             { id, hash, from, to, token:"USDC", amount, blockNumber,
+tx:{id}             { id, hash, from, to, token: USDC|USDT, amount, blockNumber,
                       gasUsed, status: pending|confirmed|failed,
                       calldata, memo: { invoiceId, invoiceHash },
                       explorerUrl, createdAt, confirmedAt }
@@ -160,6 +163,8 @@ worker's KYC status is not `verified`.
 ### 5.3 Scenario 3 — worker chooses payout conditions, company approves
 
 - Worker "Payout settings": wallet (platform wallet or external address),
+  stablecoin (USDC default; USDT selectable — USDC is the compliance
+  default, USDT is offered because many workers in SEA/LATAM prefer it),
   display currency, cadence (monthly / biweekly / per invoice), bank
   account for off-ramp.
 - Submitting writes `pendingPayoutPrefs` and notifies every org the
@@ -178,8 +183,9 @@ if worker.kyc.status != verified → flag blocked_kyc, notify company, stop
 status = sending
 executedRate = fx.getRate(currency)
 usdcAmount = convert(amount, executedRate)
-tx = chain.transferUSDC({ to: worker active wallet, amount: usdcAmount,
-                          memo: { invoiceId, invoiceHash } })
+tx = chain.transfer({ token: worker.payoutPrefs.stablecoin,
+                      to: worker active wallet, amount: usdcAmount,
+                      memo: { invoiceId, invoiceHash } })
 await chain.waitForConfirmation(tx)
 status = confirmed, store txId, executedRate, usdcAmount
 notify worker ("You received …") and company ("Settled …")
