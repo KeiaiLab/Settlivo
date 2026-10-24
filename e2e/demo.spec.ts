@@ -61,6 +61,8 @@ test("3. company issues an invoice for Alice scheduled ~1 minute out", async () 
   d.setSeconds(0, 0);
   const pad = (n: number) => String(n).padStart(2, "0");
   await page.getByLabel("Settle at").fill(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
+  await page.getByLabel("Rate", { exact: true }).selectOption("spread");
+  await expect(page.locator("#amount-preview")).toContainText("USDC", { timeout: 10_000 });
   await page.getByLabel("Memo").fill("October salary");
   await page.getByRole("button", { name: "Issue invoice" }).click();
   await page.waitForURL(/\/company\/invoices\/inv_/, { timeout: 30_000 });
@@ -96,12 +98,14 @@ test("6. on-chain record is verified and the explorer decodes the memo", async (
 
 test("7. Alice withdraws to KRW and it completes", async () => {
   await page.goto("/worker/withdraw");
+  const before = Number((await page.getByText(/Available: /).textContent())!.replace(/[^0-9.]/g, ""));
   await page.getByLabel(/Amount \(USDC\)/).fill("100");
   await page.getByRole("button", { name: "Withdraw to KRW" }).click();
   await page.waitForURL(/\/worker\/withdraw$/);
   await expect(badge("Processing")).toBeVisible({ timeout: 20_000 });
   await expect(badge("Processing")).toHaveCount(0, { timeout: 40_000 });
-  await expect(page.getByText("Withdrawal completed")).toBeVisible({ timeout: 20_000 }).catch(() => undefined);
+  const after = Number((await page.getByText(/Available: /).textContent())!.replace(/[^0-9.]/g, ""));
+  expect(after).toBeCloseTo(before - 100, 2);
 });
 
 test("8. company approves Bob's payout settings and Carlos's payment request", async () => {
@@ -182,6 +186,8 @@ test("14. Jordan registers a new worker at Acme", async () => {
   await page.waitForURL(/\/company\/workers\/wrk_/, { timeout: 30_000 });
   await expect(page.getByRole("heading", { name: "Mateo Ruiz" })).toBeVisible();
   await expect(headerBadge("Active")).toBeVisible();
+  await expect(page.getByTestId("status-badge").filter({ hasText: "Pending" }).first()).toBeVisible();
+  await expect(page.getByText("Settlivo wallet").first()).toBeVisible();
 });
 
 test("15. wallets page lists every org Jordan administers with its wallets", async () => {
@@ -239,4 +245,59 @@ test("18. Nordwind hits its Free limit, upgrades, and the payroll resumes", asyn
   await expect(page.getByTestId("current-plan")).toContainText("Business", { timeout: 20_000 });
   await page.goto(runUrl);
   await expect(headerBadge("Completed")).toBeVisible({ timeout: 90_000 });
+  await page.locator('a[href^="/company/invoices/inv_"]').first().click();
+  await page.waitForURL(/\/company\/invoices\/inv_/);
+  await expect(page.getByText("Fee", { exact: true }).locator("xpath=following-sibling::dd[1]")).toContainText(/0\.00\s*USDC/);
+});
+
+test("19. Alice requests a fixed-rate payment and Jordan approves it", async () => {
+  await signOut();
+  await loginAs("Alice Kim", /\/worker$/);
+  await page.goto("/worker/request");
+  await page.getByLabel("Company").selectOption({ label: "Acme Remote" });
+  await page.getByLabel("Amount", { exact: true }).fill("150000");
+  await page.getByLabel("Currency", { exact: true }).selectOption("KRW");
+  await page.getByLabel("Rate", { exact: true }).selectOption("fixed");
+  await expect(page.locator("#amount-preview")).toContainText("locked at", { timeout: 10_000 });
+  await page.getByLabel("What is it for?").fill("Conference travel");
+  await page.getByRole("button", { name: "Send request" }).click();
+  await page.waitForURL(/\/worker\/invoices\/inv_/, { timeout: 30_000 });
+  await expect(headerBadge("Awaiting approval")).toBeVisible();
+  await expect(page.getByText(/Fixed · 1\.1% fee/)).toBeVisible();
+  await signOut();
+  await loginAs("Jordan Lee", /\/company$/);
+  await page.goto("/company/approvals");
+  await expect(page.getByText("Payment requests (1)")).toBeVisible();
+  await page.getByRole("button", { name: "Approve & schedule" }).click();
+  await expect(page.getByText("Payment requests (0)")).toBeVisible({ timeout: 20_000 });
+});
+
+test("20. Alice changes her payout cadence and Jordan approves it", async () => {
+  await signOut();
+  await loginAs("Alice Kim", /\/worker$/);
+  await page.goto("/worker/settings");
+  await page.getByLabel("Cadence").selectOption("biweekly");
+  await page.getByRole("button", { name: "Submit for approval" }).click();
+  await expect(page.getByText("No pending changes.")).toHaveCount(0, { timeout: 20_000 });
+  await signOut();
+  await loginAs("Jordan Lee", /\/company$/);
+  await page.goto("/company/approvals");
+  await expect(page.getByText("Payout setting changes (1)")).toBeVisible();
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(page.getByText("Payout setting changes (0)")).toBeVisible({ timeout: 20_000 });
+});
+
+test("21. Jordan asks Carlos to link a wallet and Carlos accepts", async () => {
+  await page.goto("/company/workers/wrk_carlos");
+  await page.getByLabel("Request").selectOption("wallet");
+  await page.getByLabel("Message").fill("Please link a wallet for bonuses.");
+  await page.getByRole("button", { name: "Send request" }).click();
+  await expect(page.getByText("Please link a wallet for bonuses.")).toBeVisible({ timeout: 20_000 });
+  await signOut();
+  await loginAs("Carlos Mendes", /\/worker$/);
+  await page.goto("/worker/settings");
+  await expect(page.getByText("Requests from your companies").first()).toBeVisible();
+  await page.locator('input[id^="label-"]').first().fill("Phantom");
+  await page.getByRole("button", { name: "Add wallet and accept" }).first().click();
+  await expect(page.getByText("Phantom").first()).toBeVisible({ timeout: 20_000 });
 });
