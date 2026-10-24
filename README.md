@@ -72,7 +72,7 @@
 | 워커 지갑 + 링크 요청 (회사가 지갑/은행 연결 요청, 워커가 수락/거절) | 워커·회사 | `/worker/settings`, `/company/workers/[id]` | [§5.12](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#512-wallets) | [더 보기](docs/tutorial.md#더-보기) |
 | 구독 플랜 / 송금 한도 — 보내는 계정이 구독(Free `3 sends / month` · Pro $9 · Business $99, 유료는 `Unlimited sends`), 받는 쪽은 무료. Free 한도 소진 시 `Blocked · Plan` → `/company/billing`의 `Upgrade to Pro` / `Upgrade to Business`(카드 체크아웃 시뮬레이션) → 보류된 지급 자동 재개. 고정 환율 프리미엄과 오프램프 수수료는 건별 유지 | 회사 | `/company/billing` | [§5.2](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#52-scenario-2--currency-based-amount-fx-pricing-spread-or-fixed), [§6](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#6-screens) | [7. 조직 전환과 구독 플랜](docs/tutorial.md#7-조직-전환과-구독-플랜) (시드의 Nordwind가 Free 3/3 소진 상태라 Mia로 로그인해 인보이스를 발행하면 바로 볼 수 있다) |
 | 실패 / 재시도 (`Failed` → `Retry settlement`, 45 s tick 안전망, 에러 페이지) | 회사 | `/company/invoices/[id]` | [§8](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#8-error-handling-and-fallbacks) | [더 보기](docs/tutorial.md#더-보기) |
-| 데이터 리셋 (`/login`의 `Reset demo data` 버튼 + `Reset code`, `POST /api/seed` + `x-seed-secret`, `npm run seed`) | 발표자 | `/login`, `/api/seed` | [§7](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#7-seed-data) | [더 보기](docs/tutorial.md#더-보기) |
+| 데이터 리셋 (`/login`의 `Reset demo data` 버튼 한 번, 스크립트는 `POST /api/seed` + `x-seed-secret`, 로컬 `npm run seed`) | 발표자 | `/login`, `/api/seed` | [§7](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#7-seed-data) | [더 보기](docs/tutorial.md#더-보기) |
 
 자동 검증은 `npm test`(Vitest 58개)와 `npm run e2e`(Playwright, 데모 스크립트 18단계)로 돌린다.
 
@@ -262,7 +262,7 @@ draft ─▶ pending_approval ─▶ scheduled ─▶ sending ─▶ confirmed
 
 **리셋 방법**
 
-가장 쉬운 방법은 로그아웃 후 `/login` 하단의 `Reset demo data` 버튼이다. `SEED_SECRET`이 설정된 환경(프로덕션)에서는 `Reset code` 입력란에 그 값을 넣는다. 성공 시 "Demo data reset. Sign in to start the walkthrough.", 코드가 틀리면 "Wrong reset code."가 표시된다. 같은 일을 터미널에서:
+가장 쉬운 방법은 로그아웃 후 `/login` 하단의 `Reset demo data` 버튼이다. 코드 없이 한 번 누르면 되고, 성공 시 "Demo data reset. Sign in to start the walkthrough."가 표시된다(데모에는 실제 데이터가 없어 보호하지 않는다). 같은 일을 터미널에서:
 
 ```bash
 # 프로덕션 (SEED_SECRET은 Vercel env)
@@ -302,7 +302,7 @@ npm run e2e                  # Playwright: docs/demo-script.md 18단계 (최초 
 | --- | --- | --- | --- |
 | `CHAIN_MODE` | `simulated` \| `testnet` | `simulated` | `chainMode()` 호출 시점 |
 | `SCHEDULER` | `workflow` \| `tick` | `workflow` | `schedulerMode()` 호출 시점, `/api/tick` |
-| `SEED_SECRET` | 임의 문자열. `POST /api/seed`를 보호하고 `/login`의 `Reset demo data` 버튼이 요구하는 Reset code | — (미설정이면 API는 항상 401, 버튼은 코드 없이 동작) | `api/seed`, `actions/seed` |
+| `SEED_SECRET` | 임의 문자열. `POST /api/seed`(스크립트용)를 보호한다. `/login`의 `Reset demo data` 버튼은 코드를 묻지 않는다 | — (미설정이면 API는 항상 401) | `api/seed` |
 | `KV_REST_API_URL` / `KV_REST_API_TOKEN` | Upstash 통합이 주입 (`UPSTASH_REDIS_REST_*`도 허용, 우선) | — | `getRedis()` |
 | `KV_MODE` | `auto` \| `file` \| `upstash`; `file` = `.data/kv.json` JSON 저장소. Upstash 변수가 없으면 자동으로 file | `auto` | `getRedis()` |
 | `KV_FILE` | 파일 저장소 경로 override (e2e가 `.data/kv-e2e.json`으로 사용). `KV_MODE`가 file로 결정됐을 때만 적용. `.env.example`에는 없다 | `<cwd>/.data/kv.json` | `getRedis()` |

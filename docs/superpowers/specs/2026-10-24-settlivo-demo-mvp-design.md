@@ -444,10 +444,10 @@ A `seed` script (idempotent, `FLUSH` optional) populates:
 - ~15 notifications per persona, some unread.
 - FX history for the last 30 days (synthetic with mild noise).
 
-Demo reset: the "Reset demo data" button on `/login` (asks for the
-`SEED_SECRET` when one is configured) and the equivalent `POST /api/seed`
-route re-seed in one call so the presenter can restore state between
-rehearsals.
+Demo reset: the "Reset demo data" button on `/login` (one click, no code —
+the demo holds no real data) and the `POST /api/seed` route (guarded by
+`SEED_SECRET` for scripts) re-seed in one call so the presenter can restore
+state between rehearsals.
 
 ## 8. Error handling and fallbacks
 

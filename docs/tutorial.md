@@ -7,7 +7,7 @@
 - 주소: https://settlivo.vercel.app (로컬은 `npm run seed && npm run dev` → http://localhost:3000)
 - 로그인은 비밀번호 없이 이름을 클릭합니다. 이 가이드는 **Jordan Lee**(Acme Remote 회사 관리자), **Alice Kim**(한국 워커, KRW), **Eun Nguyen**(베트남 워커, KYC 미완료) 세 명만 씁니다.
 - 화면은 3초마다 자동 갱신됩니다. 새로고침하지 않아도 상태가 바뀝니다.
-- 리셋은 필수가 아닙니다. 배포된 데모에는 시작 상태(승인 대기 건, Eun의 KYC 차단 건, Nordwind의 Free 한도 소진)가 이미 들어 있습니다. 누군가 먼저 한 바퀴 돌아서 그 항목들이 사라졌을 때만 로그아웃한 뒤 `/login` 하단의 "Reset demo data" 버튼을 누르고 "Reset code"에 팀의 `SEED_SECRET`을 넣습니다. 성공하면 "Demo data reset. Sign in to start the walkthrough."가 보입니다.
+- 리셋은 필수가 아닙니다. 배포된 데모에는 시작 상태(승인 대기 건, Eun의 KYC 차단 건, Nordwind의 Free 한도 소진)가 이미 들어 있습니다. 누군가 먼저 한 바퀴 돌아서 그 항목들이 사라졌을 때만 로그아웃한 뒤 `/login` 하단의 "Reset demo data" 버튼을 한 번 누릅니다. 성공하면 "Demo data reset. Sign in to start the walkthrough."가 보입니다.
 
 따옴표 안의 영문은 화면에 보이는 라벨 그대로입니다.
 
