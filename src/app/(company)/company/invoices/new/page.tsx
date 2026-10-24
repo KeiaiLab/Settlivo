@@ -2,6 +2,7 @@ import { Page } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { LocalDateTime } from "@/components/ui/local-datetime";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createInvoice, currentRates } from "@/lib/actions/invoices";
@@ -9,11 +10,6 @@ import { SUPPORTED_CURRENCIES } from "@/lib/domain/types";
 import { formatRate } from "@/lib/format";
 import { companyContext } from "@/lib/queries/company";
 import { requireCompany } from "@/lib/session";
-
-function localDateTime(d: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export default async function NewInvoicePage({ searchParams }: { searchParams: Promise<{ worker?: string }> }) {
   const s = await requireCompany();
@@ -46,7 +42,7 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: P
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="scheduledAt">Settle at</Label>
-              <Input id="scheduledAt" name="scheduledAt" type="datetime-local" defaultValue={localDateTime(new Date(Date.now() + 2 * 60_000))} />
+              <LocalDateTime id="scheduledAt" name="scheduledAt" />
               <p className="text-xs text-muted-foreground">Default is two minutes from now so you can watch it settle.</p>
             </div>
             <div className="grid gap-1.5">

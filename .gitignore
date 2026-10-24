@@ -35,3 +35,6 @@ yarn-error.log*
 /.swc
 tsconfig.tsbuildinfo
 .data/
+playwright-report/
+test-results/
+.workflow-data*/

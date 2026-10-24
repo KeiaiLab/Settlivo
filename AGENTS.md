@@ -58,6 +58,8 @@ import chain or the workflow silently disappears from the build.
   `SCHEDULER` at call time via `chainMode()` / `schedulerMode()`.
 - Every write goes through `src/lib/db/repo.ts`; pages never import redis.
 - Forms use native `<select>`; shadcn Select is not installed on purpose.
+- Schedule pickers use `components/ui/local-datetime.tsx`, which submits an
+  ISO string from the browser; never parse `datetime-local` text on the server.
 - Pages poll: `components/shell/poller.tsx` hits `/api/tick` then refreshes
   every 3 s. Do not add client state that assumes a single render.
 - UI copy is English; theme is dark; keep worker routes usable at 375 px.

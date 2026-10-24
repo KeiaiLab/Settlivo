@@ -13,7 +13,7 @@ export async function getRates(opts: GetRatesOptions = {}): Promise<FxRates> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   let rates: FxRates;
   try {
-    const res = await fetchImpl(process.env.FX_API_URL ?? DEFAULT_URL, { cache: "no-store" });
+    const res = await fetchImpl(process.env.FX_API_URL ?? DEFAULT_URL, { cache: "no-store", signal: AbortSignal.timeout(2500) });
     if (!res.ok) throw new Error(`fx api ${res.status}`);
     const json = (await res.json()) as { rates?: Record<string, number> };
     if (!json.rates) throw new Error("fx api: no rates");

@@ -136,7 +136,8 @@ worker's KYC status is not `verified`.
 ### 5.1 Scenario 1 — company invoice → worker approval → scheduled payout
 
 1. Company admin opens "New invoice": worker, amount, currency (defaults to
-   worker's local currency), scheduled time (default now + 2 min), memo.
+   worker's local currency), scheduled time (default now + 2 min; the picker submits an ISO timestamp
+   computed in the browser's timezone), memo.
 2. Server Action stores the invoice as `pending_approval`, records
    `quoteRate` from the FX service, computes `invoiceHash =
    sha256(canonical JSON of {id, orgId, workerId, amount, currency,
@@ -303,7 +304,12 @@ call so the presenter can restore state between rehearsals.
 
 - Settlement failure → `failed` with reason; detail page offers Retry.
 - FX fetch failure → fallback rates, `source: fallback` badge.
-- Workflow unavailable → switch `SCHEDULER=tick`; no code change.
+- Workflow unavailable → switch `SCHEDULER=tick`; no code change. Even in
+  `workflow` mode, `/api/tick` (polled by every open page) settles invoices
+  that are more than 45 s overdue, so a stalled run cannot strand the demo.
+- Approval when the run has not registered its hook yet → `resumeHook` is
+  retried briefly, then a fresh run is started that takes the `scheduled`
+  branch.
 - Testnet unavailable → `CHAIN_MODE=simulated` (default anyway).
 - Redis unavailable → app shows a single "service unavailable" page;
   no silent fallbacks.

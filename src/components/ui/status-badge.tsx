@@ -36,7 +36,7 @@ const LABELS: Record<Status, string> = {
 
 export function StatusBadge({ status, className }: { status: Status; className?: string }) {
   return (
-    <Badge variant="outline" className={cn("font-medium", STYLES[status], className)}>
+    <Badge variant="outline" data-testid="status-badge" className={cn("font-medium", STYLES[status], className)}>
       {LABELS[status]}
     </Badge>
   );

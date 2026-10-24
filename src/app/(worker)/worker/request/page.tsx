@@ -3,16 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LocalDateTime } from "@/components/ui/local-datetime";
 import { Textarea } from "@/components/ui/textarea";
 import { requestPayment } from "@/lib/actions/worker";
 import { SUPPORTED_CURRENCIES } from "@/lib/domain/types";
 import { workerContext } from "@/lib/queries/worker";
 import { requireWorker } from "@/lib/session";
-
-function localDateTime(d: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export default async function RequestPage() {
   const s = await requireWorker();
@@ -30,7 +26,7 @@ export default async function RequestPage() {
             <div className="grid gap-1.5"><Label htmlFor="currency">Currency</Label>
               <select id="currency" name="currency" defaultValue={worker.localCurrency} className="h-9 rounded-md border border-input bg-background px-3 text-sm">{SUPPORTED_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}</select></div>
           </div>
-          <div className="grid gap-1.5"><Label htmlFor="scheduledAt">Preferred payout time</Label><Input id="scheduledAt" name="scheduledAt" type="datetime-local" defaultValue={localDateTime(new Date(Date.now() + 2 * 60_000))} /></div>
+          <div className="grid gap-1.5"><Label htmlFor="scheduledAt">Preferred payout time</Label><LocalDateTime id="scheduledAt" name="scheduledAt" /></div>
           <div className="grid gap-1.5"><Label htmlFor="memo">What is it for?</Label><Textarea id="memo" name="memo" rows={2} defaultValue="Overtime: release weekend" /></div>
           <div className="flex justify-end"><Button type="submit">Send request</Button></div>
         </form>

@@ -17,7 +17,7 @@ function parseCurrency(v: unknown): Currency {
   return c;
 }
 
-/** datetime-local (no tz) → ISO, treating input as local time of the server (demo only). */
+/** ISO timestamp produced in the browser (LocalDateTime); defaults to now + 2 min. */
 function parseScheduledAt(v: unknown): string {
   const s = String(v ?? "");
   const d = s ? new Date(s) : new Date(Date.now() + 2 * 60_000);

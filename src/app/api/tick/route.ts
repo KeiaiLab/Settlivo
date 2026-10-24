@@ -5,19 +5,19 @@ import { notify } from "@/lib/settlement/notify";
 
 
 const WITHDRAWAL_COMPLETE_MS = 8_000;
+/** In workflow mode the durable run settles on time; tick only rescues runs that are clearly late. */
+const WORKFLOW_SAFETY_NET_MS = 45_000;
 
 export async function GET() {
   const now = Date.now();
   const settled: string[] = [];
-
-  if (process.env.SCHEDULER === "tick") {
-    const due = (await listAllInvoices()).filter(
-      (i) => i.status === "scheduled" && !i.blockedReason && new Date(i.scheduledAt).getTime() <= now,
-    );
-    for (const inv of due) {
-      const result = await settleInvoice(inv.id);
-      settled.push(`${inv.id}:${result.status}`);
-    }
+  const grace = process.env.SCHEDULER === "tick" ? 0 : WORKFLOW_SAFETY_NET_MS;
+  const due = (await listAllInvoices()).filter(
+    (i) => i.status === "scheduled" && !i.blockedReason && new Date(i.scheduledAt).getTime() + grace <= now,
+  );
+  for (const inv of due) {
+    const result = await settleInvoice(inv.id);
+    settled.push(`${inv.id}:${result.status}`);
   }
 
   const completed: string[] = [];

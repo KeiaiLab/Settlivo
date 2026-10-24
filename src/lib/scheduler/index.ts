@@ -16,9 +16,23 @@ export const approvalToken = (invoiceId: string) => `approve:${invoiceId}`;
 /** Start the durable run for an invoice (workflow mode) or do nothing (tick mode). */
 export async function scheduleInvoice(invoiceId: string): Promise<void> {
   if (schedulerMode() !== "workflow") return;
-  const run = await start(invoiceWorkflow, [invoiceId]);
-  const inv = await getInvoice(invoiceId);
-  if (inv) await putInvoice({ ...inv, runId: run.runId });
+  await start(invoiceWorkflow, [invoiceId]);
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** The run may not have reached createHook yet (cold start); retry briefly. */
+async function resumeWithRetry(token: string, payload: { approved: boolean }, attempts = 6): Promise<boolean> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      await resumeHook(token, payload);
+      return true;
+    } catch (err) {
+      if (i === attempts - 1) console.warn("resumeHook failed", err instanceof Error ? err.message : err);
+      await sleep(500);
+    }
+  }
+  return false;
 }
 
 /** Idempotent: only acts when the invoice is pending_approval. */
@@ -52,12 +66,9 @@ export async function approveInvoice(
   );
 
   if (schedulerMode() === "workflow") {
-    try {
-      await resumeHook(approvalToken(inv.id), { approved });
-    } catch (err) {
-      // Hook may not exist yet (run still starting) or the run ended; the tick fallback still settles it.
-      console.warn("resumeHook failed", err instanceof Error ? err.message : err);
-    }
+    const delivered = await resumeWithRetry(approvalToken(inv.id), { approved });
+    // No hook (seeded invoice never started, or run not suspended yet): a fresh run takes the `scheduled` branch.
+    if (!delivered && approved) await scheduleInvoice(inv.id);
   }
   return inv;
 }

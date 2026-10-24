@@ -119,3 +119,14 @@ describe("approveInvoice", () => {
     expect(inv.rejectReason).toBe("Wrong amount");
   });
 });
+
+describe("approveInvoice when the workflow hook is not registered yet", () => {
+  test("falls back to starting a new run that takes the scheduled branch", async () => {
+    db.workers.set("wrk_1", worker());
+    db.invoices.set("inv_1", invoice({ status: "pending_approval" }));
+    resumeHook.mockRejectedValue(Object.assign(new Error("no hook"), { name: "HookNotFoundError" }));
+    const inv = await approveInvoice("inv_1", "worker:wrk_1", true);
+    expect(inv.status).toBe("scheduled");
+    expect(start).toHaveBeenCalledTimes(1);
+  });
+});
