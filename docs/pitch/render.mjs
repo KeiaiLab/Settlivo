@@ -1,0 +1,12 @@
+import { chromium } from "@playwright/test";
+const dir = new URL(".", import.meta.url).pathname.replace(/\/$/, "");
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 794, height: 1123 }, deviceScaleFactor: 2 });
+await page.goto("file://" + dir + "/settlivo-pitch.html", { waitUntil: "load" });
+await page.evaluate(() => document.fonts.ready);
+await page.pdf({ path: dir + "/settlivo-pitch.pdf", format: "A4", printBackground: true, preferCSSPageSize: true, margin: { top: 0, right: 0, bottom: 0, left: 0 } });
+const pages = await page.$$(".page");
+for (let i = 0; i < pages.length; i++) await pages[i].screenshot({ path: `${dir}/preview-p${i + 1}.png` });
+const overflow = await page.$$eval(".page", (ps) => ps.map((p) => ({ sh: p.scrollHeight, ch: p.clientHeight })));
+console.log("pages", pages.length, overflow);
+await browser.close();
