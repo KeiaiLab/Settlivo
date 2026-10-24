@@ -1,3 +1,4 @@
+// Renders settlivo-pitch.html → settlivo-pitch.pdf (A4, 2 pages) + preview PNGs. Run: node docs/pitch/render.mjs
 import { chromium } from "@playwright/test";
 const dir = new URL(".", import.meta.url).pathname.replace(/\/$/, "");
 const browser = await chromium.launch();
