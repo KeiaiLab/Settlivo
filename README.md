@@ -398,3 +398,7 @@ npm run e2e                  # Playwright: docs/demo-script.md 18단계 (최초 
 - tick 모드에서는 페이지가 열려 있어야 정산이 진행된다. 데모 중 탭을 닫지 않는다.
 
 **다음 단계**는 [docs/roadmap.md](docs/roadmap.md)에 있다. 1단계 구독 과금 모델은 시뮬레이션으로 구현됐다(플랜 게이트 + `/company/billing`, 결제는 가짜 카드). 남은 순서: internal 레일 → 온체인 앵커링 → 개인→개인 송금 → Payout Pool(시급·일급 수시 수령) → 실자금 전환 전제조건(실제 KYC/KYB, 라이선스 오프램프, 키 관리). 로드맵의 단계를 구현하려면 먼저 그 단계를 스펙으로 옮기고, 출시되면 로드맵에서 지운다.
+
+## Figures
+
+- Service flow figure (interactive isometric, built with the Anatomy skill): [docs/figures/settlivo-flow.html](docs/figures/settlivo-flow.html) · [PNG](docs/figures/settlivo-flow.png); alternates `settlivo-flow-b` (pneumatic tubes) and `settlivo-flow-c` (assembly line).
