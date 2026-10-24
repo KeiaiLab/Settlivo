@@ -93,14 +93,14 @@ export async function settleInvoice(invoiceId: string): Promise<Invoice> {
       notify(
         { type: "worker", id: worker.id },
         "invoice_settled",
-        `You received ${formatUsdc(usdcAmount, worker.payoutPrefs.stablecoin, { exact: true })}`,
+        `You received ${formatUsdc(usdcAmount, worker.payoutPrefs.stablecoin)}`,
         `${fmtAmount(inv)} settled on-chain at ${formatRate(appliedRate, inv.currency)}.`,
         `/worker/invoices/${inv.id}`,
       ),
       notify(
         { type: "org", id: inv.orgId },
         "invoice_settled",
-        `Settled ${formatUsdc(usdcAmount, worker.payoutPrefs.stablecoin, { exact: true })} to ${worker.name}`,
+        `Settled ${formatUsdc(usdcAmount, worker.payoutPrefs.stablecoin)} to ${worker.name}`,
         `${fmtAmount(inv)} confirmed on-chain.`,
         `/company/invoices/${inv.id}`,
       ),

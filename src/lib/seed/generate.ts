@@ -193,8 +193,8 @@ export function generate(): Generated {
   for (const inv of invoices.filter((i) => i.status === "confirmed").slice(0, 10)) {
     const w = byId[inv.workerId];
     notifications.push(
-      { id: `ntf_${hex(8)}`, recipient: { type: "worker", id: w.id }, kind: "invoice_settled", title: `You received ${formatUsdc(inv.usdcAmount!, inv.stablecoin, { exact: true })}`, body: `${formatMoney(inv.amount, inv.currency)} settled on-chain.`, href: `/worker/invoices/${inv.id}`, read: n++ > 2, createdAt: inv.history.at(-1)!.at },
-      { id: `ntf_${hex(8)}`, recipient: { type: "org", id: inv.orgId }, kind: "invoice_settled", title: `Settled ${formatUsdc(inv.usdcAmount!, inv.stablecoin, { exact: true })} to ${w.name}`, body: `${formatMoney(inv.amount, inv.currency)} confirmed on-chain.`, href: `/company/invoices/${inv.id}`, read: n > 4, createdAt: inv.history.at(-1)!.at },
+      { id: `ntf_${hex(8)}`, recipient: { type: "worker", id: w.id }, kind: "invoice_settled", title: `You received ${formatUsdc(inv.usdcAmount!, inv.stablecoin)}`, body: `${formatMoney(inv.amount, inv.currency)} settled on-chain.`, href: `/worker/invoices/${inv.id}`, read: n++ > 2, createdAt: inv.history.at(-1)!.at },
+      { id: `ntf_${hex(8)}`, recipient: { type: "org", id: inv.orgId }, kind: "invoice_settled", title: `Settled ${formatUsdc(inv.usdcAmount!, inv.stablecoin)} to ${w.name}`, body: `${formatMoney(inv.amount, inv.currency)} confirmed on-chain.`, href: `/company/invoices/${inv.id}`, read: n > 4, createdAt: inv.history.at(-1)!.at },
     );
   }
   const pending = invoices.find((i) => i.status === "pending_approval")!;

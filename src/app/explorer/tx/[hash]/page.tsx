@@ -40,7 +40,7 @@ export default async function ExplorerTx({ params }: { params: Promise<{ hash: s
             {row("Timestamp", `${formatDateTime(tx.confirmedAt ?? tx.createdAt)}${tx.confirmedAt ? "" : " (submitted)"}`)}
             {row("From", <span className="font-mono text-xs">{tx.from} <span className="text-muted-foreground">(Settlivo treasury)</span></span>)}
             {row("To", <span className="font-mono text-xs">{tx.to}</span>)}
-            {row("Token transfer", <span className="flex flex-wrap items-center gap-2"><Usdc value={tx.amount} token={tx.token} exact className="font-medium" /><ArrowRight className="size-3 text-muted-foreground" /><span className="text-muted-foreground">ERC-20 transfer via {tx.token} contract</span></span>)}
+            {row("Token transfer", <span className="flex flex-wrap items-center gap-2"><Usdc value={tx.amount} token={tx.token} className="font-medium" /><ArrowRight className="size-3 text-muted-foreground" /><span className="text-muted-foreground">ERC-20 transfer via {tx.token} contract</span></span>)}
             {row("Gas used", tx.gasUsed ? `${tx.gasUsed.toLocaleString("en-US")} · ~$0.002` : "—")}
             {row("Method", <span className="font-mono text-xs">transfer(address,uint256) + memo</span>)}
           </dl>

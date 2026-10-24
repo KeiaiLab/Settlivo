@@ -55,9 +55,10 @@ import chain or the workflow silently disappears from the build.
 - Money: USDC amounts are 6-dp strings, never floats in storage. Local-currency
   amounts are numbers.
 - Render amounts only through `components/ui/money.tsx` (`Money`, `Usdc`) or
-  `formatMoney`/`formatUsdc` in `src/lib/format.ts`: grouped digits, 2-dp USDC
-  (6-dp with `exact` for on-chain records), `justify` inside table cells so the
-  currency marker sits flush-left and digits flush-right.
+  `formatMoney`/`formatUsdc` in `src/lib/format.ts`: grouped digits, USDC always
+  2 dp on screen (storage stays 6 dp; the tooltip carries the full value),
+  `justify` inside table cells so the currency marker sits flush-left and digits
+  flush-right.
 - No Redis or env access at module top level. Read `CHAIN_MODE` and
   `SCHEDULER` at call time via `chainMode()` / `schedulerMode()`.
 - Every write goes through `src/lib/db/repo.ts`; pages never import redis.

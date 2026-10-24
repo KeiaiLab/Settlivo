@@ -47,9 +47,9 @@ export function Money({ amount, currency, size = "md", justify = false, dp, clas
   return <Figure unit={unit} digits={digits} unitFirst size={size} justify={justify} title={`${digits} ${code}`} className={className} />;
 }
 
-/** Stablecoin amount: `3,043.48 USDC` inline, `USDC … 3,043.48` when justified. `exact` keeps all 6 dp (on-chain record). */
-export function Usdc({ value, token = "USDC", size = "md", justify = false, exact = false, className }: { value: string | number; token?: string; size?: Size; justify?: boolean; exact?: boolean; className?: string }) {
-  const { digits, unit } = usdcParts(value, token, { exact });
+/** Stablecoin amount, always 2 dp on screen: `3,043.48 USDC` inline, `USDC … 3,043.48` when justified. The full 6-dp on-chain value is in the tooltip. */
+export function Usdc({ value, token = "USDC", size = "md", justify = false, className }: { value: string | number; token?: string; size?: Size; justify?: boolean; className?: string }) {
+  const { digits, unit } = usdcParts(value, token);
   const full = usdcParts(value, token, { exact: true });
   return <Figure unit={unit} digits={digits} unitFirst={false} size={size} justify={justify} title={`${full.digits} ${unit}`} className={className} />;
 }
