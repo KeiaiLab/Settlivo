@@ -10,8 +10,28 @@
 - UI 문구는 영어이고 다크 테마입니다. 이 문서에서 따옴표 안의 영문은 화면에 보이는 **정확한 라벨**이므로 그대로 찾으면 됩니다.
 - 체인은 기본적으로 시뮬레이션입니다. 실제 자금은 움직이지 않습니다. (로그인 화면 하단의 "Demo environment on Base Sepolia. No real funds move." 문구는 `CHAIN_MODE=testnet`일 때만 정확하고, 기본 모드에서는 인앱 탐색기가 "Explorer · Base (simulated)"로 표시됩니다.)
 
+## 핵심 기능 10분 코스
+
+시간이 없으면 이것만 따라 하세요. 프로덕션 https://settlivo.vercel.app 기준이며, 한 흐름으로 이어집니다. 각 줄 끝의 링크가 상세 절입니다.
+
+| # | 누구로 | 어디서 | 무엇을 | 보여야 하는 것 | 상세 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | — | `/login` | "Jordan Lee" 클릭 | 회사 대시보드. Treasury balance, Paid in {Month}, "Needs your attention" | [1](#1-로그인과-페르소나), [2](#2-회사-대시보드) |
+| 2 | Jordan | "New invoice" | Worker "Alice Kim · KR · KRW", Amount `4200000`, Rate "Spread…", Memo `October salary` → "Issue invoice" | 상세 페이지 배지 "Awaiting approval", FX 카드에 견적 환율과 수수료 | [3](#3-인보이스-발행-fx-spread--fixed) |
+| 3 | Alice | 로그아웃 → "Alice Kim" → `/worker` | "Needs your approval (1)" 카드의 "Approve" | 토스트 "Approved" + "Email sent to the counterparty.", "Upcoming"에 예약 시각 | [4](#4-워커-승인과-예약-정산) |
+| 4 | Alice | 인보이스 상세를 열어 둠 | 약 2분 대기 (3초마다 자동 갱신) | 배지 "Scheduled" → "Sending" → "Confirmed", 알림 "You received … USDC" | [4](#4-워커-승인과-예약-정산) |
+| 5 | Alice | 같은 페이지 | "On-chain record"의 "Tx hash" 클릭 | 헤더 "Verified", 탐색기의 "Decoded Settlivo memo"에 인보이스 ID와 해시 | [5](#5-fx-비교와-온체인-기록-검증) |
+| 6 | Alice | "Withdraw to KRW" | Amount `100` → "Withdraw to KRW" | 비교표(Settlivo vs Bank wire), History "Processing" → 약 8초 뒤 "Completed", 잔액 감소 | [6](#6-출금-오프램프) |
+| 7 | Jordan | 로그아웃 → "Jordan Lee" → "Approvals" | Bob의 설정 변경 "Approve", Carlos의 결제 요청 "Approve & schedule" | diff 뷰, 요청 건이 "Scheduled"로 | [7](#7-페이아웃-설정-변경과-회사-승인), [8](#8-워커-결제-요청) |
+| 8 | Jordan | "Payroll" | "Run payroll now" | 런 페이지 "Settled 0 / 3" → 행이 하나씩 "Confirmed" → "3 / 3", 배지 "Completed" | [9](#9-페이롤-런) |
+| 9 | Jordan → Eun → Jordan | "Invoices"의 "Blocked · KYC" 행 | Eun으로 로그인해 "Continue" → 3단계 완료 → Jordan으로 돌아와 "Retry settlement" | "Reviewing your documents…" 3초 → 배너 사라짐, 재시도 후 "Confirmed" | [10](#10-kyc-차단과-재시도) |
+| 10 | Jordan | 헤더 조직 선택 → "Nordwind Labs" | "Billing" → "Payroll" → "Run payroll now" → "Upgrade to Business" | Free 3/3 소진이라 행이 "Blocked · Plan", 업그레이드 즉시 "Confirmed"로 재개 | [12](#12-조직-전환), [12b](#12b-구독-플랜과-billing) |
+
+데이터를 되돌리려면 [17. API와 데이터 리셋](#17-api와-데이터-리셋)의 `POST /api/seed`를 호출합니다.
+
 목차
 
+- [핵심 기능 10분 코스](#핵심-기능-10분-코스)
 - [0. 준비](#0-준비)
 - [1. 로그인과 페르소나](#1-로그인과-페르소나)
 - [2. 회사 대시보드](#2-회사-대시보드)

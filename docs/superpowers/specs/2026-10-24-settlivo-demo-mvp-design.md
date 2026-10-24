@@ -381,6 +381,8 @@ histories.
 
 Routes (all under one app):
 
+- `/` — redirects to `/company` or `/worker` when a session exists,
+  otherwise `/login`.
 - `/login` — persona picker styled as a sign-in page.
 - `/company` — dashboard: USDC balance, this-month payout total,
   savings widget (fees and days saved vs bank wires), workers table (KYC
@@ -418,6 +420,8 @@ Routes (all under one app):
 - `GET /api/tick` — polled by the client every 3 s: settles the oldest due
   invoice (one per call, so a batch confirms row by row) in `tick` mode and
   completes withdrawals older than 8 s.
+- `POST /api/seed` — re-seed endpoint guarded by the `x-seed-secret`
+  header (§7).
 
 Worker routes are responsive down to 375 px. Company routes target desktop
 but must not break on tablet widths.
