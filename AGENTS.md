@@ -34,7 +34,7 @@ and [docs/demo-script.md](docs/demo-script.md) (what judges will click).
 | Path | Role |
 | --- | --- |
 | `src/lib/domain` | Types, `newId()`, invoice status machine (`transition`) |
-| `src/lib/db` | The only module that touches Redis (`getRedis()`, `repo.ts`) |
+| `src/lib/db` | The only module that touches storage: `getRedis()` returns Upstash or the local JSON file store (`kv.ts`, `.data/kv.json`); `repo.ts` is the API |
 | `src/lib/fx` | Live FX fetch with hardcoded fallback, 6-dp USDC conversion |
 | `src/lib/chain` | `ChainAdapter` interface; `simulated` (default) and `testnet` (viem/Base Sepolia); calldata memo codec |
 | `src/lib/settlement`, `src/lib/scheduler`, `src/workflows` | Settlement step, Workflow + tick schedulers, approval, retry |
@@ -82,7 +82,8 @@ npm test && npm run typecheck && npm run build
 ```
 
 For UI changes also run `npm run dev` and check `/login` returns 200 and an
-unauthenticated `/company` redirects (307) to `/login`.
+unauthenticated `/company` redirects (307) to `/login`. For anything touching
+a demo-critical path run `npm run e2e` (Playwright, uses `KV_MODE=file`).
 
 ## Git
 
@@ -100,6 +101,6 @@ verification (§5.6), withdraw (§5.7), KYC block + retry (§5.8), org switcher
 
 ## Known gaps
 
-- Production seed and full rehearsal are pending Vercel project access
-  (Upstash Redis env vars are not yet set on the project).
+- `e2e/` runs the demo script locally against the file store; production
+  is seeded through `POST /api/seed`.
 - `CHAIN_MODE=testnet` is implemented but untested end to end.

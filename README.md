@@ -45,7 +45,8 @@ Next.js (App Router) · shadcn/ui · Upstash Redis (Vercel Marketplace) · Verce
 | `CHAIN_MODE` | `simulated` \| `testnet` | `simulated` |
 | `SCHEDULER` | `workflow` \| `tick` | `workflow` |
 | `SEED_SECRET` | any string; protects `POST /api/seed` | — |
-| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | from the Upstash integration | — |
+| `KV_REST_API_URL` / `KV_REST_API_TOKEN` | from the Upstash integration (`UPSTASH_REDIS_REST_*` also accepted) | — |
+| `KV_MODE` | `auto` \| `file` \| `upstash`; `file` = JSON store at `.data/kv.json`, used automatically when no Upstash vars are set | `auto` |
 | `FX_API_URL` | keyless FX endpoint returning `{ rates }` per 1 USD | open.er-api.com |
 | `SIM_CONFIRM_MS` | simulated chain confirmation delay (ms) | random 2–5 s |
 | `BASE_SEPOLIA_RPC_URL`, `PLATFORM_PRIVATE_KEY`, `USDC_ADDRESS` | testnet mode only | — |
@@ -54,10 +55,11 @@ Next.js (App Router) · shadcn/ui · Upstash Redis (Vercel Marketplace) · Verce
 
 ```bash
 npm install
-cp .env.example .env.local   # fill Upstash vars (vercel env pull .env.local)
+cp .env.example .env.local   # optional: without Upstash vars the app uses .data/kv.json
 npm run seed                 # flush + seed demo data into Redis
 npm run dev
 npm test && npm run typecheck && npm run build
+npm run e2e                  # Playwright walkthrough of docs/demo-script.md (needs: npx playwright install chromium)
 ```
 
 Contributor rules live in [AGENTS.md](AGENTS.md).

@@ -49,7 +49,9 @@ Components:
 - **Web app** — company and worker screens. Writes via Server Actions.
   Reads refresh by polling every 3 s (SWR or `router.refresh`).
 - **Upstash Redis** (Vercel Marketplace) — all application state as JSON
-  documents. No relational schema.
+  documents. No relational schema. Without Upstash credentials (local dev,
+  e2e) the same repository runs on a JSON file store at `.data/kv.json`
+  (`KV_MODE=file`).
 - **Scheduler** — one of two interchangeable engines behind a single
   `scheduleInvoice(invoiceId)` interface, selected by `SCHEDULER=workflow|tick`:
   - `workflow`: Vercel Workflow SDK. One run per invoice. Uses `createHook`
@@ -329,7 +331,8 @@ tested path if Workflow misbehaves.
 ## 10. Configuration
 
 ```
-UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN   (Marketplace)
+KV_REST_API_URL / KV_REST_API_TOKEN   (Upstash integration; UPSTASH_REDIS_REST_* accepted)
+KV_MODE=auto|file|upstash          default auto (file when no credentials)
 SCHEDULER=workflow|tick            default workflow
 CHAIN_MODE=simulated|testnet       default simulated
 SEED_SECRET                        protects /api/seed

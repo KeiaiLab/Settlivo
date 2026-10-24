@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, FileUp, Loader2 } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,18 +16,19 @@ const STEPS: { key: Step; title: string; desc: string }[] = [
 
 export function KycWizard({ worker, onStep, onFinish }: { worker: Worker; onStep: (s: Step) => Promise<void>; onFinish: () => Promise<void> }) {
   const [pending, start] = useTransition();
-  const [reviewing, setReviewing] = useState(false);
   const allDone = STEPS.every((s) => worker.kyc.steps[s.key]);
   const current = STEPS.find((s) => !worker.kyc.steps[s.key]);
+  const reviewing = allDone && worker.kyc.status !== "verified";
+  const finishRef = useRef(onFinish);
+  finishRef.current = onFinish;
 
   useEffect(() => {
     if (!reviewing) return;
-    const t = setTimeout(() => start(() => onFinish()), 3000);
+    const t = setTimeout(() => start(() => finishRef.current()), 3000);
     return () => clearTimeout(t);
-  }, [reviewing, onFinish]);
+  }, [reviewing]);
 
-  if (reviewing || (allDone && worker.kyc.status !== "verified")) {
-    if (!reviewing) setReviewing(true);
+  if (reviewing) {
     return (
       <div className="flex flex-col items-center gap-3 py-10 text-center">
         <Loader2 className="size-8 animate-spin text-emerald-400" />
