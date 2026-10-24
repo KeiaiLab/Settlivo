@@ -72,7 +72,7 @@
 | 워커 지갑 + 링크 요청 (회사가 지갑/은행 연결 요청, 워커가 수락/거절) | 워커·회사 | `/worker/settings`, `/company/workers/[id]` | [§5.12](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#512-wallets) | [더 보기](docs/tutorial.md#더-보기) |
 | 구독 플랜 / 송금 한도 — 보내는 계정이 구독(Free `3 sends / month` · Pro $9 · Business $99, 유료는 `Unlimited sends`), 받는 쪽은 무료. Free 한도 소진 시 `Blocked · Plan` → `/company/billing`의 `Upgrade to Pro` / `Upgrade to Business`(카드 체크아웃 시뮬레이션) → 보류된 지급 자동 재개. 고정 환율 프리미엄과 오프램프 수수료는 건별 유지 | 회사 | `/company/billing` | [§5.2](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#52-scenario-2--currency-based-amount-fx-pricing-spread-or-fixed), [§6](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#6-screens) | [7. 조직 전환과 구독 플랜](docs/tutorial.md#7-조직-전환과-구독-플랜) (시드의 Nordwind가 Free 3/3 소진 상태라 Mia로 로그인해 인보이스를 발행하면 바로 볼 수 있다) |
 | 실패 / 재시도 (`Failed` → `Retry settlement`, 45 s tick 안전망, 에러 페이지) | 회사 | `/company/invoices/[id]` | [§8](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#8-error-handling-and-fallbacks) | [더 보기](docs/tutorial.md#더-보기) |
-| 데이터 리셋 (`POST /api/seed` + `x-seed-secret`, `npm run seed`) | 운영자 | `/api/seed` | [§7](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#7-seed-data) | [더 보기](docs/tutorial.md#더-보기) |
+| 데이터 리셋 (`/login`의 `Reset demo data` 버튼 + `Reset code`, `POST /api/seed` + `x-seed-secret`, `npm run seed`) | 발표자 | `/login`, `/api/seed` | [§7](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md#7-seed-data) | [더 보기](docs/tutorial.md#더-보기) |
 
 자동 검증은 `npm test`(Vitest 58개)와 `npm run e2e`(Playwright, 데모 스크립트 18단계)로 돌린다.
 
@@ -262,6 +262,8 @@ draft ─▶ pending_approval ─▶ scheduled ─▶ sending ─▶ confirmed
 
 **리셋 방법**
 
+가장 쉬운 방법은 로그아웃 후 `/login` 하단의 `Reset demo data` 버튼이다. `SEED_SECRET`이 설정된 환경(프로덕션)에서는 `Reset code` 입력란에 그 값을 넣는다. 성공 시 "Demo data reset. Sign in to start the walkthrough.", 코드가 틀리면 "Wrong reset code."가 표시된다. 같은 일을 터미널에서:
+
 ```bash
 # 프로덕션 (SEED_SECRET은 Vercel env)
 curl -X POST https://settlivo.vercel.app/api/seed -H "x-seed-secret: $SEED_SECRET" -d '{"flush":true}'
@@ -300,7 +302,7 @@ npm run e2e                  # Playwright: docs/demo-script.md 18단계 (최초 
 | --- | --- | --- | --- |
 | `CHAIN_MODE` | `simulated` \| `testnet` | `simulated` | `chainMode()` 호출 시점 |
 | `SCHEDULER` | `workflow` \| `tick` | `workflow` | `schedulerMode()` 호출 시점, `/api/tick` |
-| `SEED_SECRET` | 임의 문자열; `POST /api/seed` 보호; also the reset code for the Reset demo data button on `/login` | — (미설정이면 항상 401) | `api/seed` |
+| `SEED_SECRET` | 임의 문자열. `POST /api/seed`를 보호하고 `/login`의 `Reset demo data` 버튼이 요구하는 Reset code | — (미설정이면 API는 항상 401, 버튼은 코드 없이 동작) | `api/seed`, `actions/seed` |
 | `KV_REST_API_URL` / `KV_REST_API_TOKEN` | Upstash 통합이 주입 (`UPSTASH_REDIS_REST_*`도 허용, 우선) | — | `getRedis()` |
 | `KV_MODE` | `auto` \| `file` \| `upstash`; `file` = `.data/kv.json` JSON 저장소. Upstash 변수가 없으면 자동으로 file | `auto` | `getRedis()` |
 | `KV_FILE` | 파일 저장소 경로 override (e2e가 `.data/kv-e2e.json`으로 사용). `KV_MODE`가 file로 결정됐을 때만 적용. `.env.example`에는 없다 | `<cwd>/.data/kv.json` | `getRedis()` |
@@ -359,7 +361,7 @@ npm run e2e                  # Playwright: docs/demo-script.md 18단계 (최초 
 | --- | --- | --- |
 | [README.md](README.md) (이 문서) | 허브. 피치, 기능 지도, 아키텍처, 도메인, 라우트, 시드, 실행 방법 | 처음 저장소를 열 때 |
 | [docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md) | **설계 스펙 = 동작의 원본(source of truth).** 페르소나, 아키텍처, 데이터 모델, 핵심 흐름 §5.1–5.12, 화면 §6, 시드 §7, 에러 처리 §8, 테스트 §9, 설정 §10 | 동작이 "의도된 것인지" 확인할 때. 동작·라우트·데이터 형태·env·상태를 바꾸면 같은 커밋에서 해당 절을 고친다 |
-| [docs/demo-script.md](docs/demo-script.md) | 심사위원용 **5분 클릭 스크립트**(18단계: 기본 13 + 확장 5, 14–18은 온톨로지·구독), 리셋 curl, 직접 실행 명령 | 발표 리허설, 데모 직전 |
+| [docs/demo-script.md](docs/demo-script.md) | 심사위원용 **5분 클릭 스크립트**(18단계: 기본 13 + 확장 5, 14–18은 온톨로지·구독), 리셋 방법, 직접 실행 명령 | 발표 리허설, 데모 직전 |
 | [docs/tutorial.md](docs/tutorial.md) | **10분 핵심 기능 가이드.** 심사 흐름에 맞춰 핵심 기능 7개를 누구로·어디서·무엇을 눌러·무엇이 보여야 하는지만 적음. 나머지는 "더 보기" 표 | 처음 데모를 만져 볼 때, 심사 직전 점검 |
 | [docs/roadmap.md](docs/roadmap.md) | **미래 방향(구현되지 않음).** 1단계 구독 과금은 시뮬레이션으로 출시돼 스펙 §5.2 Plans / §6 `/company/billing`으로 옮겨졌고 로드맵에서 지워졌다. 남은 단계: internal 레일 → 온체인 앵커링 → 개인→개인 송금 → Payout Pool(시급·일급 적립 후 워커가 Claim) → 실자금 전환 전제조건 | 다음 단계를 논의할 때. 스펙으로 옮기기 전에는 여기서 구현하지 않는다 |
 | [docs/pitch/settlivo-pitch.pdf](docs/pitch/settlivo-pitch.pdf) ([HTML 원본](docs/pitch/settlivo-pitch.html), [render.mjs](docs/pitch/render.mjs)로 PDF 생성, 화면 캡처 `docs/pitch/shots/`) | 심사위원용 2쪽 피치 덱 | 발표 직전 |
@@ -386,7 +388,7 @@ npm run e2e                  # Playwright: docs/demo-script.md 18단계 (최초 
 **구현됐지만 검증되지 않은 것**
 
 - `CHAIN_MODE=testnet`(viem + Base Sepolia USDC)은 구현돼 있으나 end-to-end로 테스트되지 않았다. USDT는 testnet에서 지원하지 않는다.
-- `e2e/`는 로컬 파일 저장소 + `SCHEDULER=tick`에서만 실행된다. 프로덕션(workflow 모드)은 `POST /api/seed`로 리셋한 뒤 수동으로 리허설한다.
+- `e2e/`는 로컬 파일 저장소 + `SCHEDULER=tick`에서만 실행된다. 프로덕션(workflow 모드)은 `/login`의 `Reset demo data` 버튼이나 `POST /api/seed`로 리셋한 뒤 수동으로 리허설한다.
 
 **코드에서 알아둘 점**
 

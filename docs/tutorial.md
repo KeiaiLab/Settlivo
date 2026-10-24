@@ -7,7 +7,7 @@
 - 주소: https://settlivo.vercel.app (로컬은 `npm run seed && npm run dev` → http://localhost:3000)
 - 로그인은 비밀번호 없이 이름을 클릭합니다. 이 가이드는 **Jordan Lee**(Acme Remote 회사 관리자), **Alice Kim**(한국 워커, KRW), **Eun Nguyen**(베트남 워커, KYC 미완료) 세 명만 씁니다.
 - 화면은 3초마다 자동 갱신됩니다. 새로고침하지 않아도 상태가 바뀝니다.
-- 데이터를 처음 상태로 되돌리려면:
+- 데이터를 처음 상태로 되돌리려면 로그아웃한 뒤 `/login` 하단의 "Reset demo data" 버튼을 누릅니다. 프로덕션은 "Reset code" 입력란에 팀의 `SEED_SECRET`을 넣어야 하며, 성공하면 "Demo data reset. Sign in to start the walkthrough."가 보입니다. 터미널에서 하려면:
 
 ```bash
 curl -X POST https://settlivo.vercel.app/api/seed -H "x-seed-secret: $SEED_SECRET" -d '{"flush":true}'
@@ -118,4 +118,4 @@ curl -X POST https://settlivo.vercel.app/api/seed -H "x-seed-secret: $SEED_SECRE
 | 정산 실패 시 "Retry settlement", 45초 이상 지연된 건은 자동 재처리 | Jordan | 인보이스 상세 |
 | 자동 검증: 단위 테스트 `npm test`, 데모 전체 E2E `npm run e2e` | 개발자 | 터미널 |
 
-문제가 생기면: 상태가 멈춘 듯하면 페이지를 열어 둔 채 1분만 기다립니다(안전망이 보류 건을 처리). 데이터가 꼬이면 위의 리셋 명령을 다시 실행합니다.
+문제가 생기면: 상태가 멈춘 듯하면 페이지를 열어 둔 채 1분만 기다립니다(안전망이 보류 건을 처리). 데이터가 꼬이면 `/login`의 "Reset demo data"로 되돌립니다.
