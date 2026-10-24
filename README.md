@@ -35,6 +35,8 @@
 - Production: https://settlivo.vercel.app (auto-deploys from `main`)
 - Walkthrough: [docs/demo-script.md](docs/demo-script.md)
 - Design spec: [docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md)
+- FX pricing per invoice: spread (market rate at send, 0.5% fee) or fixed (rate locked for 24 h, 1.1% fee); see the spec, section 5.2.
+- Model: users administer N company accounts with M wallets each; workers hold N wallets and can be registered, removed or offboarded; see the spec, section 4.1.
 
 ## Stack
 
@@ -49,6 +51,7 @@ Next.js (App Router) · shadcn/ui · Upstash Redis (Vercel Marketplace) · Verce
 | `KV_MODE` | `auto` \| `file` \| `upstash`; `file` = JSON store at `.data/kv.json`, used automatically when no Upstash vars are set | `auto` |
 | `FX_API_URL` | keyless FX endpoint returning `{ rates }` per 1 USD | open.er-api.com |
 | `SIM_CONFIRM_MS` | simulated chain confirmation delay (ms) | random 2–5 s |
+| `DEMO_TIMEZONE` | IANA zone used for server-rendered times (Vercel runs in UTC) | `Asia/Seoul` |
 | `BASE_SEPOLIA_RPC_URL`, `PLATFORM_PRIVATE_KEY`, `USDC_ADDRESS` | testnet mode only | — |
 
 ## Run locally

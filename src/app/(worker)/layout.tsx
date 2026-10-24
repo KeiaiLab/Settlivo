@@ -1,5 +1,6 @@
 import { Header } from "@/components/shell/header";
-import { personaById, requireWorker } from "@/lib/session";
+import { getWorker } from "@/lib/db/repo";
+import { requireWorker } from "@/lib/session";
 
 const ITEMS = [
   { href: "/worker", label: "Home" },
@@ -10,7 +11,7 @@ const ITEMS = [
 
 export default async function WorkerLayout({ children }: { children: React.ReactNode }) {
   const s = await requireWorker();
-  const persona = personaById(s.personaId);
+  const worker = await getWorker(s.workerId);
   return (
     <>
       <Header
@@ -18,7 +19,7 @@ export default async function WorkerLayout({ children }: { children: React.React
         items={ITEMS}
         recipient={{ type: "worker", id: s.workerId }}
         name={s.name}
-        subtitle={persona?.subtitle ?? "Worker"}
+        subtitle={worker ? `${worker.country} · ${worker.localCurrency} · ${worker.kyc.status === "verified" ? "Verified" : "KYC pending"}` : "Worker"}
       />
       {children}
     </>

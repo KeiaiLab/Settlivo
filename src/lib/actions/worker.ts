@@ -9,7 +9,8 @@ import { getOrg, getWorker, putInvoice, putWithdrawal, putWorker } from "@/lib/d
 import { newId } from "@/lib/domain/ids";
 import { SUPPORTED_CURRENCIES, type Currency, type Invoice, type PayoutPrefs, type Withdrawal } from "@/lib/domain/types";
 import { fromUsdc } from "@/lib/fx/convert";
-import { formatMoney } from "@/lib/format";
+import { parseRateMode, priceAtIssue } from "@/lib/fx/pricing";
+import { formatDateTime, formatMoney } from "@/lib/format";
 import { approveInvoice, scheduleInvoice } from "@/lib/scheduler";
 import { notify } from "@/lib/settlement/notify";
 import { requireWorker } from "@/lib/session";
@@ -38,7 +39,8 @@ export async function requestPayment(formData: FormData) {
   const scheduledAt = (scheduledRaw ? new Date(scheduledRaw) : new Date(Date.now() + 2 * 60_000)).toISOString();
   const memo = String(formData.get("memo") ?? "").trim() || "Payment request";
   const rates = await currentRates();
-  const base = { id: newId("inv"), orgId, workerId: worker.id, amount, currency, scheduledAt, memo };
+  const pricing = priceAtIssue(parseRateMode(formData.get("rateMode")), rates.rates[currency], scheduledAt);
+  const base = { id: newId("inv"), orgId, workerId: worker.id, amount, currency, scheduledAt, memo, ...pricing };
   const now = new Date().toISOString();
   const inv: Invoice = {
     ...base,
@@ -51,7 +53,7 @@ export async function requestPayment(formData: FormData) {
     createdAt: now,
   };
   await putInvoice(inv);
-  await notify({ type: "org", id: orgId }, "invoice_created", `Payment request from ${worker.name}: ${formatMoney(amount, currency)}`, `${memo} · wants it ${new Date(scheduledAt).toLocaleString("en-US")}`, "/company/approvals");
+  await notify({ type: "org", id: orgId }, "invoice_created", `Payment request from ${worker.name}: ${formatMoney(amount, currency)}`, `${memo} · wants it ${formatDateTime(scheduledAt)}`, "/company/approvals");
   await scheduleInvoice(inv.id);
   redirect(`/worker/invoices/${inv.id}`);
 }

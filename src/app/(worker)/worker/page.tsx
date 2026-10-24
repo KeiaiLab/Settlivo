@@ -16,7 +16,7 @@ export default async function WorkerHome() {
   const s = await requireWorker();
   const ctx = await workerContext(s.workerId);
   if (!ctx) return <Page title="Worker not found"><p className="text-sm text-muted-foreground">Seed the database first.</p></Page>;
-  const { worker, invoices, orgMap, balance, localBalance, rates } = ctx;
+  const { worker, invoices, orgMap, memberships, payoutWallet, balance, localBalance, rates } = ctx;
   const needsApproval = invoices.filter((i) => i.status === "pending_approval" && i.initiatedBy === "company");
   const upcoming = invoices.filter((i) => ["scheduled", "sending"].includes(i.status));
   const workerMap = { [worker.id]: worker };
@@ -24,6 +24,15 @@ export default async function WorkerHome() {
   return (
     <Page title={`Hi, ${worker.name.split(" ")[0]}`} description={`${worker.country} · paid in ${worker.payoutPrefs.stablecoin} · shown in ${worker.localCurrency}`}>
       <KycBanner worker={worker} />
+      {memberships.filter((m) => m.status !== "active").map((m) => (
+        <div key={m.orgId} className="mb-4 rounded-lg border px-4 py-3 text-sm text-muted-foreground" data-testid="membership-notice">
+          {m.status === "offboarded" ? (
+            <>Offboarded from {orgMap[m.orgId]?.name ?? "a company"}{m.leftAt && <> on {formatDateTime(m.leftAt)}</>}. Your history and wallets stay available.</>
+          ) : (
+            <>{m.finalInvoiceId ? <Link href={`/worker/invoices/${m.finalInvoiceId}`} className="underline underline-offset-4 hover:text-foreground">Final settlement</Link> : "Final settlement"} from {orgMap[m.orgId]?.name ?? "a company"} is in progress.</>
+          )}
+        </div>
+      ))}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="md:col-span-2 bg-emerald-500/5 ring-emerald-500/25">
           <CardHeader>
@@ -32,6 +41,7 @@ export default async function WorkerHome() {
             <CardDescription className="flex flex-wrap items-baseline gap-x-1.5">
               <Usdc value={balance} token={worker.payoutPrefs.stablecoin} className="text-foreground" />
               <span>· {formatRate(rates.rates[worker.localCurrency], worker.localCurrency)}{rates.source === "fallback" && " · fallback rate"}</span>
+              {payoutWallet && <span>· payouts to {payoutWallet.label}</span>}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex gap-2">
@@ -46,7 +56,7 @@ export default async function WorkerHome() {
             {upcoming.map((i) => (
               <Link key={i.id} href={`/worker/invoices/${i.id}`} className="block rounded-md border px-3 py-2 hover:bg-muted/50">
                 <div className="flex justify-between"><span>{orgMap[i.orgId]?.name}</span><Money amount={i.amount} currency={i.currency} /></div>
-                <div className="text-xs text-muted-foreground">{i.blockedReason ? "On hold until verified" : i.status === "sending" ? "Settling now…" : formatDateTime(i.scheduledAt)}</div>
+                <div className="text-xs text-muted-foreground">{i.blockedReason ? (worker.kyc.status === "verified" ? "Verified, waiting for your company to retry" : "On hold until verified") : i.status === "sending" ? "Settling now…" : formatDateTime(i.scheduledAt)}</div>
               </Link>
             ))}
           </CardContent>

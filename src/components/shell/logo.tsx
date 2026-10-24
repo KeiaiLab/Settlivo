@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 /** Settlivo mark: settled-green tile with an S drawn as a single settlement path. Shared by the header and app/icon.svg. */
-export function LogoMark({ className = "size-7" }: { className?: string }) {
+function LogoMark({ className = "size-7" }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={className} aria-hidden>
       <rect width="32" height="32" rx="8" fill="#2fd38a" />

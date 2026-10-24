@@ -3,7 +3,7 @@ import type { Currency } from "@/lib/domain/types";
 const ZERO_DP: Currency[] = ["KRW", "VND"];
 const dpFor = (currency: Currency) => (ZERO_DP.includes(currency) ? 0 : 2);
 
-export interface MoneyParts {
+interface MoneyParts {
   /** Currency marker, e.g. "₩", "R$", "zł". */
   unit: string;
   /** Grouped digits including sign and decimals, e.g. "-4,200,000.50". */
@@ -62,6 +62,11 @@ export function timeAgo(iso: string): string {
   return d > 0 ? `${d}d ago` : `in ${-d}d`;
 }
 
+/** Server components render in the demo audience's zone (Vercel runs in UTC); override with DEMO_TIMEZONE. */
+function demoTimeZone(): string {
+  return process.env.DEMO_TIMEZONE || "Asia/Seoul";
+}
+
 export function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: demoTimeZone() });
 }

@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import type { InvoiceStatus } from "@/lib/domain/types";
 import { cn } from "@/lib/utils";
 
-type Status = InvoiceStatus | "blocked" | "processing" | "completed" | "verified" | "pending";
+type Status = InvoiceStatus | "blocked" | "processing" | "completed" | "verified" | "pending" | "active" | "offboarding" | "former" | "accepted" | "declined";
 
 const STYLES: Record<Status, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -17,6 +17,11 @@ const STYLES: Record<Status, string> = {
   completed: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
   verified: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
   pending: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  active: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  offboarding: "bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse",
+  former: "bg-muted text-muted-foreground",
+  accepted: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  declined: "bg-rose-500/15 text-rose-300 border-rose-500/30",
 };
 
 const LABELS: Record<Status, string> = {
@@ -32,6 +37,11 @@ const LABELS: Record<Status, string> = {
   completed: "Completed",
   verified: "Verified",
   pending: "Pending",
+  active: "Active",
+  offboarding: "Offboarding",
+  former: "Former",
+  accepted: "Accepted",
+  declined: "Declined",
 };
 
 export function StatusBadge({ status, className }: { status: Status; className?: string }) {

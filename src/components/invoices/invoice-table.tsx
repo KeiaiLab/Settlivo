@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Money, Usdc } from "@/components/ui/money";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -32,6 +33,7 @@ export function InvoiceTable({ invoices, workers, base, showWorker = true, compa
               )}
               <TableCell className={compact ? "max-w-40 truncate text-muted-foreground" : "max-w-[220px] truncate text-muted-foreground"}>
                 <Link href={`${base}/invoices/${inv.id}`}>{inv.memo}</Link>
+                {inv.rateMode === "fixed" && <Badge variant="outline" className="ml-1.5 h-4 px-1.5 align-middle text-[10px] font-normal text-muted-foreground">Fixed</Badge>}
               </TableCell>
               <TableCell className="min-w-32"><Money amount={inv.amount} currency={inv.currency} justify /></TableCell>
               {!compact && <TableCell className="hidden min-w-32 text-muted-foreground sm:table-cell">{inv.usdcAmount ? <Usdc value={inv.usdcAmount} token={inv.stablecoin} justify /> : <span className="flex justify-end">—</span>}</TableCell>}

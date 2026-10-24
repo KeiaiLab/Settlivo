@@ -157,6 +157,7 @@ test("12. company retries Eun's blocked invoice and it settles", async () => {
   await page.goto(eunInvoiceUrl);
   await page.getByRole("button", { name: "Retry settlement" }).click();
   await expect(headerBadge("Confirmed")).toBeVisible({ timeout: 90_000 });
+  await expect(page.getByText("Verified", { exact: true })).toBeVisible();
 });
 
 test("13. org switcher moves to Nordwind Labs where Alice also works", async () => {
@@ -166,4 +167,57 @@ test("13. org switcher moves to Nordwind Labs where Alice also works", async () 
   await page.goto("/company/workers");
   await expect(page.getByRole("link", { name: "Alice Kim" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Dana Kowalski" })).toBeVisible();
+});
+
+test("14. Jordan registers a new worker at Acme", async () => {
+  await page.goto("/company");
+  await page.getByLabel("Organization").selectOption("org_acme");
+  await expect(page.getByRole("heading", { name: "Acme Remote" })).toBeVisible({ timeout: 30_000 });
+  await page.goto("/company/workers");
+  await page.getByLabel("Name", { exact: true }).fill("Mateo Ruiz");
+  await page.getByLabel("Email", { exact: true }).fill("mateo@settlivo.demo");
+  await page.getByLabel("Country", { exact: true }).fill("ES");
+  await page.getByLabel("Local currency", { exact: true }).selectOption("EUR");
+  await page.getByRole("button", { name: "Add worker", exact: true }).click();
+  await page.waitForURL(/\/company\/workers\/wrk_/, { timeout: 30_000 });
+  await expect(page.getByRole("heading", { name: "Mateo Ruiz" })).toBeVisible();
+  await expect(headerBadge("Active")).toBeVisible();
+});
+
+test("15. wallets page lists every org Jordan administers with its wallets", async () => {
+  await page.goto("/company/wallets");
+  await expect(page.getByRole("heading", { name: "Wallets", level: 1 })).toBeVisible();
+  const acme = page.getByTestId("org-card").filter({ hasText: "Acme Remote" });
+  const nordwind = page.getByTestId("org-card").filter({ hasText: "Nordwind Labs" });
+  await expect(acme).toContainText("Treasury");
+  await expect(acme).toContainText("Operations");
+  await expect(nordwind).toContainText("Treasury");
+  await expect(nordwind).toContainText("EUR operations");
+  await page.getByLabel("Label", { exact: true }).first().fill("Bonus pool");
+  await page.getByRole("button", { name: "Add wallet", exact: true }).first().click();
+  await expect(acme).toContainText("Bonus pool", { timeout: 20_000 });
+});
+
+test("16. Jordan offboards Bob with a final payment", async () => {
+  await page.goto("/company/workers/wrk_bob");
+  await page.getByLabel("Final payment (PHP)").fill("10000");
+  await page.getByRole("button", { name: "Offboard", exact: true }).click();
+  await expect(headerBadge("Offboarding")).toBeVisible({ timeout: 20_000 });
+  await expect(headerBadge("Former")).toBeVisible({ timeout: 90_000 });
+  await page.goto("/company/workers");
+  const former = page.getByRole("heading", { name: /Former workers/ });
+  await expect(former).toBeVisible();
+  // Bob must appear after the "Former workers" heading (inside that section), not in the active table above it.
+  await expect(former.locator("xpath=following::*[contains(normalize-space(.), 'Bob Reyes')][1]")).toBeVisible();
+});
+
+test("17. Alice manages her wallets", async () => {
+  await signOut();
+  await loginAs("Alice Kim", /\/worker$/);
+  await page.goto("/worker/settings");
+  await expect(page.getByText("Payout wallet", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Ledger (cold)").first()).toBeVisible();
+  await page.getByLabel("Label", { exact: true }).first().fill("Rabby");
+  await page.getByRole("button", { name: "Add wallet", exact: true }).first().click();
+  await expect(page.getByText("Rabby").first()).toBeVisible({ timeout: 20_000 });
 });

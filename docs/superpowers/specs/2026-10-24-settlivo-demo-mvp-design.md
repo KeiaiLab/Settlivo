@@ -76,7 +76,8 @@ preview/production deployments.
 ## 4. Data model (Redis)
 
 One JSON document per key; membership tracked in Sets. All IDs are short
-prefixed strings (`inv_…`, `wrk_…`, `org_…`, `tx_…`, `ntf_…`, `wd_…`).
+prefixed strings (`inv_…`, `wrk_…`, `org_…`, `tx_…`, `ntf_…`, `wd_…`, `wal_…`,
+`lrq_…`).
 
 ```
 org:{id}            { id, name, country, currency, kybStatus, walletAddress,
@@ -98,8 +99,11 @@ org:{id}:workers    Set<workerId>
 invoice:{id}        { id, orgId, workerId, initiatedBy: company|worker,
                       amount, currency, memo, scheduledAt,
                       status, quoteRate, executedRate, usdcAmount,
-                      txId, invoiceHash, runId, payrollRunId?,
-                      error?, history: [{status, at, by}] , createdAt }
+                      rateMode: spread|fixed, feeBps, lockedRate?,
+                      lockExpiresAt?, appliedRate?, feeUsdc?, lockExpired?,
+                      payoutWalletId?, txId, invoiceHash, runId,
+                      payrollRunId?, error?, history: [{status, at, by}],
+                      createdAt }
 invoices            Set<invoiceId>
 org:{id}:invoices   Set<invoiceId>
 worker:{id}:invoices Set<invoiceId>
@@ -118,7 +122,49 @@ notification:{id}   { id, recipient: {type: org|worker, id}, kind, title,
 fx:rates            { base:"USD", rates:{KRW,PHP,BRL,PLN,VND,EUR,USD},
                       fetchedAt, source: live|fallback }
 fx:history          List<{at, rates}>  (for the rate chart)
+
+wallet:{id}         { id, owner: {type: org|worker, id}, label, address,
+                      token: USDC|USDT, kind: platform|external,
+                      status: active|revoked, isDefault, createdAt }
+org:{id}:wallets    Set<walletId>
+worker:{id}:wallets Set<walletId>
+
+linkrequest:{id}    { id, orgId, workerId, kind: wallet|bank, message,
+                      status: pending|accepted|declined, walletId?,
+                      createdAt, resolvedAt? }
+org:{id}:linkrequests     Set<linkRequestId>
+worker:{id}:linkrequests  Set<linkRequestId>
 ```
+
+`worker.memberships[]` holds one entry per organisation the worker has ever
+belonged to: `{ orgId, status: active|offboarding|offboarded, joinedAt,
+leftAt?, finalInvoiceId? }`. `worker.orgIds` is derived: the org ids whose
+membership is `active` or `offboarding`. `org.walletAddress` is the address of
+the org's default wallet (kept so existing settlement and explorer code keeps
+working). `invoice.payoutWalletId` snapshots the worker wallet that was paid.
+
+### 4.1 Ontology
+
+Every screen and action is expressed with these entities and nothing else:
+
+```
+User (company admin | individual)
+ ├─ administers N Organizations            (company user; org switcher, §5.10)
+ │    ├─ owns M Wallets                     (treasury + any extra, §5.12)
+ │    ├─ has Memberships with Workers       (register / remove / offboard, §5.11)
+ │    ├─ issues Invoices, runs PayrollRuns
+ │    └─ sends LinkRequests to Workers      (ask for a wallet or bank account)
+ └─ is a Worker (individual user)
+      ├─ owns N Wallets (platform or external) + a BankAccount
+      ├─ has KYC and PayoutPrefs (default payout wallet)
+      ├─ approves / requests Invoices, makes Withdrawals
+      └─ answers LinkRequests
+Settlement pays the worker's default active wallet from the org's default
+wallet and records the wallet id on the invoice and the memo on-chain.
+```
+
+Personas (§2) are users: Jordan is a company user administering Acme and
+Nordwind, Mia administers Nordwind, every worker is an individual user.
 
 Invoice status machine:
 
@@ -139,10 +185,10 @@ worker's KYC status is not `verified`.
    worker's local currency), scheduled time (default now + 2 min; the picker submits an ISO timestamp
    computed in the browser's timezone), memo.
 2. Server Action stores the invoice as `pending_approval`, records
-   `quoteRate` from the FX service, computes `invoiceHash =
-   sha256(canonical JSON of {id, orgId, workerId, amount, currency,
-   scheduledAt, memo})`, creates a worker notification, and calls
-   `scheduleInvoice(id)`.
+   `quoteRate` from the FX service and the pricing mode (§5.2), computes
+   `invoiceHash = sha256(canonical JSON of {id, orgId, workerId, amount,
+   currency, scheduledAt, memo, rateMode, lockedRate})`, creates a worker
+   notification, and calls `scheduleInvoice(id)`.
 3. Worker sees the invoice under "Needs your approval", reviews the
    details, and clicks Approve or Reject. Approve calls
    `resumeHook("approve:"+id, {approved:true})` (workflow) or sets status
@@ -150,12 +196,26 @@ worker's KYC status is not `verified`.
 4. At `scheduledAt` the scheduler runs settlement (§5.4).
 5. Both parties see the status timeline advance in near real time.
 
-### 5.2 Scenario 2 — currency-based amount, FX fixed at send time
+### 5.2 Scenario 2 — currency-based amount, FX pricing: spread or fixed
 
 - Invoices are denominated in the worker's local currency.
 - `quoteRate` is captured at creation; `executedRate` is re-fetched
-  immediately before sending. `usdcAmount = floor(amount / executedRate,
-  6 dp)` for non-USD currencies (rates are per 1 USD).
+  immediately before sending (always the market rate, for the delta
+  display). The rate the amount is computed with depends on the invoice's
+  `rateMode`, chosen by the issuer (invoice form, payment request, or once
+  per payroll run), default `spread`:
+  - **spread** (변동형): `appliedRate = executedRate`, fee 0.5 % (50 bps).
+    Cheapest; the final USDC amount is unknown until send.
+  - **fixed** (고정형): `lockedRate = quoteRate` is frozen for 24 h after
+    `scheduledAt` (`lockExpiresAt`); `appliedRate = lockedRate`, fee 1.1 %
+    (110 bps, the risk premium). The USDC amount is known at issue. If the
+    lock has expired at send time the invoice settles at market, `lockExpired`
+    is set and the company is notified (`invoice_rate_lock_expired`).
+- `usdcAmount = floor(amount / appliedRate, 6 dp)` for non-USD currencies
+  (rates are per 1 USD) and is what the worker receives on-chain;
+  `feeUsdc = floor(usdcAmount × feeBps / 10000, 6 dp)` is the company's
+  cost, shown on the invoice. `rateMode` and `lockedRate` are part of the
+  invoice hash (§5.6), so a locked rate is committed on-chain.
 - Invoice detail shows quote rate, executed rate, delta (%) and the USDC
   amount, plus a small FX history sparkline.
 - FX service: fetch from a keyless public API; on failure use hardcoded
@@ -165,11 +225,11 @@ worker's KYC status is not `verified`.
 
 ### 5.3 Scenario 3 — worker chooses payout conditions, company approves
 
-- Worker "Payout settings": wallet (platform wallet or external address),
-  stablecoin (USDC default; USDT selectable — USDC is the compliance
-  default, USDT is offered because many workers in SEA/LATAM prefer it),
-  display currency, cadence (monthly / biweekly / per invoice), bank
-  account for off-ramp.
+- Worker "Payout settings": payout wallet (one of the worker's wallets,
+  see §5.12), stablecoin (USDC default; USDT selectable — USDC is the
+  compliance default, USDT is offered because many workers in SEA/LATAM
+  prefer it), display currency, cadence (monthly / biweekly / per invoice),
+  bank account for off-ramp.
 - Submitting writes `pendingPayoutPrefs` and notifies every org the
   worker belongs to.
 - Company dashboard "Approvals" lists pending changes with a diff view.
@@ -184,13 +244,17 @@ worker's KYC status is not `verified`.
 load invoice
 if worker.kyc.status != verified → flag blocked_kyc, notify company, stop
 status = sending
-executedRate = fx.getRate(currency)
-usdcAmount = convert(amount, executedRate)
+executedRate = fx.getRate(currency)                       // market
+{ appliedRate, usdcAmount, feeUsdc, lockExpired } = price(invoice, executedRate)  // §5.2
+if lockExpired → notify company (invoice_rate_lock_expired)
+wallet = worker's default active Wallet (§5.12; legacy fallback: payoutPrefs)
 tx = chain.transfer({ token: worker.payoutPrefs.stablecoin,
-                      to: worker active wallet, amount: usdcAmount,
+                      to: wallet.address, amount: usdcAmount,
                       memo: { invoiceId, invoiceHash } })
 await chain.waitForConfirmation(tx)
-status = confirmed, store txId, executedRate, usdcAmount
+status = confirmed, store txId, executedRate, usdcAmount, payoutWalletId
+if this invoice is the worker's offboarding final settlement → membership
+  offboarded (§5.11), notify both sides
 notify worker ("You received …") and company ("Settled …")
 on error → status = failed, store error, notify company
 ```
@@ -216,7 +280,9 @@ input. The simulated adapter stores the same calldata.
 
 Invoice detail "On-chain record" card: reads the tx (Redis in simulated
 mode, RPC in testnet mode), decodes the suffix, recomputes the hash from
-the stored invoice, and shows "Verified" or "Mismatch". Links to the
+the stored invoice, and shows "Verified" or "Mismatch". Retry never
+rewrites hashed fields (`scheduledAt` stays as issued), so a retried
+invoice still verifies. Links to the
 in-app explorer (simulated) or Basescan (testnet).
 
 ### 5.7 Off-ramp simulation
@@ -239,7 +305,9 @@ their persona. Company shows a KYB "Verified" card.
 
 In-app bell with unread count on both roles. Events: invoice created,
 approved, rejected, scheduled, settled, failed, blocked; payout prefs
-submitted/approved; withdrawal completed; KYC verified. Each notification
+submitted/approved; withdrawal completed; KYC verified; worker invited,
+offboarded; wallet added; link request sent/accepted/declined; rate lock
+expired. Each notification
 links to the relevant page. Actions that would send email show an
 "Email sent to …" toast.
 
@@ -249,6 +317,37 @@ Company admin A can switch orgs via a header menu (Acme ↔ Nordwind).
 Switching changes the active `orgId` in the session cookie; all company
 pages are scoped by it. Alice appears in both orgs with separate invoice
 histories.
+
+### 5.11 Worker lifecycle
+
+- **Register**: company "Add worker" (name, email, country, local currency,
+  stablecoin). Creates the worker with `kyc.status = pending`, a platform
+  wallet, an `active` membership, and an invitation notification ("Email
+  sent" toast). The worker appears in the list with a KYC badge.
+- **Remove**: detaches the membership (`status = offboarded`, `leftAt = now`)
+  without a final payment. Refused while the worker has an open invoice
+  (`pending_approval`, `scheduled`, `sending`) in that org.
+- **Offboard** (퇴사 처리): optional final invoice (amount prefilled from the
+  last confirmed one, `scheduledAt = now`, pre-approved like payroll), then
+  membership `offboarding` → `offboarded` once that invoice confirms (the
+  settlement step flips it). New invoices and payroll rows are blocked for
+  offboarded memberships; history stays visible under "Former workers" and
+  on the worker's own home ("Offboarded from Acme Remote on …").
+
+### 5.12 Wallets
+
+- An org has M wallets (`/company/wallets`): every org the user administers
+  is listed with its wallets, balance per wallet, this-month volume and the
+  default marker. "Add wallet" takes a label and an address or creates a
+  platform wallet; "Make default" changes where settlements are paid from.
+- A worker has N wallets (`/worker/settings`): list, add (platform or
+  external), set the payout wallet (goes through the pending-prefs approval
+  of §5.3). Settlement always pays the default active wallet and stores
+  `payoutWalletId` on the invoice.
+- **Link requests**: from a worker profile the company asks for a wallet or
+  a bank account (`kind`, message). The worker sees it in Settings and
+  accepts by adding the wallet/bank (request → `accepted`, wallet id
+  attached) or declines. Both sides are notified.
 
 ## 6. Screens
 
@@ -262,8 +361,13 @@ Routes (all under one app):
 - `/company/invoices/[id]` — status timeline, FX comparison, on-chain
   record card, retry button on failure.
 - `/company/payroll` — Payroll Run builder; `/company/payroll/[runId]`.
-- `/company/workers` — worker list with KYC, payout type, settlement count;
-  `/company/workers/[id]` — worker profile, payout prefs, history.
+- `/company/workers` — active workers with KYC, payout type, settlement
+  count, "Add worker" form, and a "Former workers" section;
+  `/company/workers/[id]` — worker profile, wallets, payout prefs, history,
+  "Request wallet/bank link", "Offboard" (with optional final invoice) and
+  "Remove".
+- `/company/wallets` — every org the user administers × its wallets
+  (balance, default, add wallet, make default).
 - `/company/approvals` — pending payout-pref changes and worker-initiated
   invoices.
 - `/worker` — balance (USDC + local equivalent), "Needs your approval",
@@ -271,7 +375,8 @@ Routes (all under one app):
 - `/worker/invoices/[id]` — same detail as company view, worker actions.
 - `/worker/request` — worker-initiated invoice form.
 - `/worker/withdraw` — off-ramp simulation.
-- `/worker/settings` — payout settings (wallet, currency, cadence, bank).
+- `/worker/settings` — wallets (list, add, payout wallet), link requests
+  inbox, payout settings (currency, cadence, bank).
 - `/worker/onboarding` — KYC wizard.
 - `/explorer/tx/[hash]` — in-app explorer page for simulated transactions
   (hash, block, from/to, amount, gas, decoded calldata with the Settlivo
@@ -279,8 +384,9 @@ Routes (all under one app):
 - `/notifications` — full list for the current persona.
 - `POST /api/invoices/[id]/approve` — approval endpoint (also the Next.js
   entrypoint that makes the Workflow builder discover `invoiceWorkflow`).
-- `GET /api/tick` — polled by the client every 3 s: settles due invoices in
-  `tick` mode and completes withdrawals older than 8 s.
+- `GET /api/tick` — polled by the client every 3 s: settles the oldest due
+  invoice (one per call, so a batch confirms row by row) in `tick` mode and
+  completes withdrawals older than 8 s.
 
 Worker routes are responsive down to 375 px. Company routes target desktop
 but must not break on tablet widths.
@@ -289,7 +395,10 @@ but must not break on tablet widths.
 
 A `seed` script (idempotent, `FLUSH` optional) populates:
 
-- 2 orgs, 5 workers, memberships as in §2.
+- 2 orgs, 5 workers, memberships as in §2, plus one former Nordwind worker
+  (offboarded) so the lifecycle is visible.
+- Wallets: two per org (treasury + operations) and two for Alice (platform
+  + external); one pending link request from Acme to Bob.
 - ~24 historical invoices across the last 3 months (mixed statuses, mostly
   confirmed) with matching tx records and FX history.
 - 2 past payroll runs.
@@ -303,6 +412,13 @@ call so the presenter can restore state between rehearsals.
 ## 8. Error handling and fallbacks
 
 - Settlement failure → `failed` with reason; detail page offers Retry.
+- Fixed-rate lock expired at send → settles at market, `lockExpired`,
+  company notified; the fee stays at the fixed-mode rate chosen at issue.
+- Any uncaught Server Action error → `app/error.tsx` ("That didn't go
+  through", Try again / Go back) instead of a blank screen.
+- Cached `fx:rates` are refreshed from the live API when they are missing,
+  seeded as fallback, or older than 10 minutes, so a reseed does not pin
+  the demo to synthetic rates.
 - FX fetch failure → fallback rates, `source: fallback` badge.
 - Workflow unavailable → switch `SCHEDULER=tick`; no code change. Even in
   `workflow` mode, `/api/tick` (polled by every open page) settles invoices
@@ -329,7 +445,9 @@ Manual end-to-end rehearsal script (kept in `docs/demo-script.md`):
 login as company → create invoice for Alice (now + 2 min) → login as Alice
 → approve → watch settlement → open on-chain record → withdraw to KRW →
 back to company → run payroll for 3 workers → approve Bob's wallet change
-→ switch to Nordwind → show Alice's second history.
+→ switch to Nordwind → show Alice's second history → back to Acme: register
+a worker, review wallets, offboard Bob → Alice adds a wallet (§4.1, §5.11,
+§5.12).
 
 Workflow integration tests are skipped for time; the `tick` engine is the
 tested path if Workflow misbehaves.
@@ -348,6 +466,8 @@ PLATFORM_PRIVATE_KEY
 USDC_ADDRESS                        Base Sepolia USDC
 FX_API_URL                          optional override
 SIM_CONFIRM_MS                      simulated only, confirmation delay ms
+DEMO_TIMEZONE                       IANA zone for server-rendered times (default Asia/Seoul;
+                                    Vercel functions run in UTC)
 ```
 
 ## 11. Timeline (2026-10-24)

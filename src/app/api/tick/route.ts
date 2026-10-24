@@ -16,9 +16,11 @@ export async function GET() {
   const due = (await listAllInvoices()).filter(
     (i) => i.status === "scheduled" && !i.blockedReason && new Date(i.scheduledAt).getTime() + grace <= now,
   );
-  for (const inv of due) {
-    const result = await settleInvoice(inv.id);
-    settled.push(`${inv.id}:${result.status}`);
+  // One settlement per poll: a payroll batch then confirms row by row (§5.5) instead of freezing the page.
+  const next = due.sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt))[0];
+  if (next) {
+    const result = await settleInvoice(next.id);
+    settled.push(`${next.id}:${result.status}`);
   }
 
   const completed: string[] = [];

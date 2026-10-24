@@ -1,13 +1,16 @@
 import { getRedis } from "./redis";
+import { memberships } from "@/lib/domain/membership";
 import type {
   FxHistoryPoint,
   FxRates,
   Invoice,
+  LinkRequest,
   Notification,
   Org,
   PayrollRun,
   Recipient,
   Tx,
+  Wallet,
   Withdrawal,
   Worker,
 } from "@/lib/domain/types";
@@ -29,16 +32,49 @@ export async function putOrg(org: Org) {
 
 // ---- Workers
 export const getWorker = (id: string) => getRedis().get<Worker>(`worker:${id}`);
+export async function listAllWorkers(): Promise<Worker[]> {
+  const ids = await getRedis().smembers("workers");
+  return getMany<Worker>(ids.map((i) => `worker:${i}`));
+}
 export async function listWorkersByOrg(orgId: string): Promise<Worker[]> {
   const ids = await getRedis().smembers(`org:${orgId}:workers`);
   return (await getMany<Worker>(ids.map((i) => `worker:${i}`))).sort((a, b) => a.name.localeCompare(b.name));
 }
+/** Former members stay in `org:{id}:workers` so their history remains visible (§5.11). */
 export async function putWorker(w: Worker) {
   const r = getRedis();
   await Promise.all([
     r.set(`worker:${w.id}`, w),
     r.sadd("workers", w.id),
-    ...w.orgIds.map((o) => r.sadd(`org:${o}:workers`, w.id)),
+    ...memberships(w).map((m) => r.sadd(`org:${m.orgId}:workers`, w.id)),
+  ]);
+}
+
+// ---- Wallets (§5.12)
+const walletSetKey = (owner: Recipient) => `${owner.type}:${owner.id}:wallets`;
+export const getWallet = (id: string) => getRedis().get<Wallet>(`wallet:${id}`);
+export async function listWalletsByOwner(owner: Recipient): Promise<Wallet[]> {
+  const ids = await getRedis().smembers(walletSetKey(owner));
+  return (await getMany<Wallet>(ids.map((i) => `wallet:${i}`))).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+export async function putWallet(w: Wallet) {
+  await Promise.all([getRedis().set(`wallet:${w.id}`, w), getRedis().sadd(walletSetKey(w.owner), w.id)]);
+}
+
+// ---- Link requests (§5.12)
+export const getLinkRequest = (id: string) => getRedis().get<LinkRequest>(`linkrequest:${id}`);
+async function linkRequestsFromSet(key: string): Promise<LinkRequest[]> {
+  const ids = await getRedis().smembers(key);
+  return (await getMany<LinkRequest>(ids.map((i) => `linkrequest:${i}`))).sort(byCreatedDesc);
+}
+export const listLinkRequestsByOrg = (orgId: string) => linkRequestsFromSet(`org:${orgId}:linkrequests`);
+export const listLinkRequestsByWorker = (workerId: string) => linkRequestsFromSet(`worker:${workerId}:linkrequests`);
+export async function putLinkRequest(lr: LinkRequest) {
+  const r = getRedis();
+  await Promise.all([
+    r.set(`linkrequest:${lr.id}`, lr),
+    r.sadd(`org:${lr.orgId}:linkrequests`, lr.id),
+    r.sadd(`worker:${lr.workerId}:linkrequests`, lr.id),
   ]);
 }
 

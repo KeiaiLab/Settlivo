@@ -2,7 +2,7 @@ import { resumeHook, start } from "workflow/api";
 import { getInvoice, getWorker, putInvoice } from "@/lib/db/repo";
 import { transition } from "@/lib/domain/invoice-status";
 import type { Invoice } from "@/lib/domain/types";
-import { formatMoney } from "@/lib/format";
+import { formatDateTime, formatMoney } from "@/lib/format";
 import { notify } from "@/lib/settlement/notify";
 import { invoiceWorkflow } from "@/workflows/invoice";
 
@@ -61,7 +61,7 @@ export async function approveInvoice(
     approved ? "invoice_approved" : "invoice_rejected",
     approved ? `Invoice approved: ${label}` : `Invoice rejected: ${label}`,
     approved
-      ? `${worker?.name ?? "Worker"}'s invoice is scheduled for ${new Date(inv.scheduledAt).toLocaleString("en-US")}.`
+      ? `${worker?.name ?? "Worker"}'s invoice is scheduled for ${formatDateTime(inv.scheduledAt)}.`
       : `Reason: ${inv.rejectReason}`,
     href,
   );
@@ -74,15 +74,17 @@ export async function approveInvoice(
   return inv;
 }
 
-/** failed or blocked → scheduled now, and re-schedule. */
+/**
+ * failed or blocked → scheduled again and re-run. `scheduledAt` is left alone: it is part of the
+ * committed invoiceHash (§5.6) and is already in the past, so the invoice is due immediately.
+ */
 export async function retryInvoice(invoiceId: string): Promise<Invoice> {
   let inv = await getInvoice(invoiceId);
   if (!inv) throw new Error(`invoice ${invoiceId} not found`);
-  const now = new Date().toISOString();
   if (inv.status === "failed") {
-    inv = transition(inv, "scheduled", "system:retry", { scheduledAt: now, error: undefined });
+    inv = transition(inv, "scheduled", "system:retry", { error: undefined });
   } else if (inv.status === "scheduled" && inv.blockedReason) {
-    inv = { ...inv, blockedReason: undefined, scheduledAt: now };
+    inv = { ...inv, blockedReason: undefined };
   } else {
     return inv;
   }

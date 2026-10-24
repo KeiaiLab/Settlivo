@@ -1,6 +1,6 @@
 import type { FxHistoryPoint, Invoice, Notification, PayrollRun, Tx, Withdrawal, Worker } from "@/lib/domain/types";
 import { FALLBACK_RATES } from "@/lib/fx/fallback";
-import { toUsdc } from "@/lib/fx/convert";
+import { priceAtIssue, priceAtSettlement, type RateMode } from "@/lib/fx/pricing";
 import { formatMoney, formatUsdc } from "@/lib/format";
 import { buildTransferCalldata, invoiceHash } from "@/lib/chain/memo";
 import { PLATFORM_SIM_ADDRESS } from "@/lib/chain/types";
@@ -60,12 +60,11 @@ export interface Generated {
   notifications: Notification[];
 }
 
-function makeConfirmed(worker: Worker, orgId: string, when: Date, amount: number, memo: string, extra: Partial<Invoice> = {}): { inv: Invoice; tx: Tx } {
+function makeConfirmed(worker: Worker, orgId: string, when: Date, amount: number, memo: string, opts: { mode?: RateMode; extra?: Partial<Invoice> } = {}): { inv: Invoice; tx: Tx } {
   const id = `inv_${hex(8)}`;
   const quoteRate = Number((FALLBACK_RATES[worker.localCurrency] * (1 + (rand() - 0.5) * 0.01)).toPrecision(6));
   const executedRate = Number((quoteRate * (1 + (rand() - 0.5) * 0.004)).toPrecision(6));
   const rates = { base: "USD" as const, rates: { ...FALLBACK_RATES, [worker.localCurrency]: executedRate }, fetchedAt: "", source: "fallback" as const };
-  const usdcAmount = toUsdc(amount, worker.localCurrency, rates);
   const base = {
     id,
     orgId,
@@ -74,7 +73,11 @@ function makeConfirmed(worker: Worker, orgId: string, when: Date, amount: number
     currency: worker.localCurrency,
     scheduledAt: iso(when),
     memo,
+    ...priceAtIssue(opts.mode ?? "spread", quoteRate, iso(when)),
   };
+  // Settled on schedule, i.e. inside a fixed invoice's 24 h lock, so fixed ones apply the locked quote.
+  const pricing = priceAtSettlement(base, rates, iso(when));
+  const { usdcAmount } = pricing;
   const hash = invoiceHash(base);
   const txHash = `0x${hex(64)}`;
   const to = worker.payoutPrefs.wallet === "external" && worker.payoutPrefs.externalAddress ? worker.payoutPrefs.externalAddress : worker.platformWallet;
@@ -103,6 +106,8 @@ function makeConfirmed(worker: Worker, orgId: string, when: Date, amount: number
     quoteRate,
     executedRate,
     usdcAmount,
+    appliedRate: pricing.appliedRate,
+    feeUsdc: pricing.feeUsdc,
     txId: tx.id,
     invoiceHash: hash,
     history: [
@@ -112,7 +117,7 @@ function makeConfirmed(worker: Worker, orgId: string, when: Date, amount: number
       { status: "confirmed", at: tx.confirmedAt!, by: "system:settlement" },
     ],
     createdAt: iso(created),
-    ...extra,
+    ...opts.extra,
   };
   return { inv, tx };
 }
@@ -127,30 +132,35 @@ export function generate(): Generated {
 
   // Three monthly payroll runs for Acme (last two as PayrollRun records), 3 months back.
   for (const monthsBack of [3, 2, 1]) {
-    const when = daysAgo(monthsBack * 30 - 2, 10);
+    const when = daysAgo(monthsBack * 30 - 26, 10);
     const members = WORKERS.filter((w) => w.orgIds.includes(ORG_ACME) && w.kyc.status === "verified");
     const runId = `run_${hex(8)}`;
     const ids: string[] = [];
     for (const w of members) {
-      const { inv, tx } = makeConfirmed(w, ORG_ACME, when, SALARY[w.id], "Monthly salary", monthsBack <= 2 ? { payrollRunId: runId } : {});
+      const { inv, tx } = makeConfirmed(w, ORG_ACME, when, SALARY[w.id], "Monthly salary", monthsBack <= 2 ? { extra: { payrollRunId: runId } } : {});
       invoices.push(inv);
       txs.push(tx);
       ids.push(inv.id);
     }
     if (monthsBack <= 2) payrollRuns.push({ id: runId, orgId: ORG_ACME, invoiceIds: ids, status: "completed", createdAt: iso(when) });
   }
-  // Nordwind monthly for Alice + Dana.
+  // Nordwind monthly for Alice (fixed-rate, §5.2) + Dana.
   for (const monthsBack of [3, 2, 1]) {
     const when = daysAgo(monthsBack * 30 - 5, 11);
     for (const w of [byId.wrk_alice, byId.wrk_dana]) {
       const amount = w.id === "wrk_alice" ? 1_900_000 : SALARY[w.id];
-      const { inv, tx } = makeConfirmed(w, ORG_NORDWIND, when, amount, "Monthly salary");
+      const { inv, tx } = makeConfirmed(w, ORG_NORDWIND, when, amount, "Monthly salary", { mode: w.id === "wrk_alice" ? "fixed" : "spread" });
       invoices.push(inv); txs.push(tx);
     }
   }
+  // Finn worked for Nordwind until September (offboarded, §5.11): history only.
+  for (const monthsBack of [3, 2]) {
+    const { inv, tx } = makeConfirmed(byId.wrk_finn, ORG_NORDWIND, daysAgo(monthsBack * 30 - 5, 11), 4_100, "Monthly salary");
+    invoices.push(inv); txs.push(tx);
+  }
   // Ad-hoc bonuses / milestones.
   for (let i = 0; i < 6; i++) {
-    const w = pick(WORKERS.filter((x) => x.kyc.status === "verified"));
+    const w = pick(WORKERS.filter((x) => x.kyc.status === "verified" && x.orgIds.length > 0));
     const org = w.orgIds.includes(ORG_ACME) ? ORG_ACME : ORG_NORDWIND;
     const { inv, tx } = makeConfirmed(w, org, daysAgo(5 + Math.floor(rand() * 70), 14), Math.round(SALARY[w.id] * (0.1 + rand() * 0.3)), pick(MEMOS.slice(1)));
     invoices.push(inv); txs.push(tx);
@@ -158,12 +168,16 @@ export function generate(): Generated {
   // One pending worker-initiated request (Carlos) and one blocked (Eun).
   {
     const w = byId.wrk_carlos;
-    const base = { id: `inv_${hex(8)}`, orgId: ORG_ACME, workerId: w.id, amount: 2_400, currency: w.localCurrency, scheduledAt: iso(daysAgo(-1, 9)), memo: "Overtime: release weekend" };
+    const id = `inv_${hex(8)}`;
+    const scheduledAt = iso(daysAgo(-1, 9));
+    const base = { id, orgId: ORG_ACME, workerId: w.id, amount: 2_400, currency: w.localCurrency, scheduledAt, memo: "Overtime: release weekend", ...priceAtIssue("spread", FALLBACK_RATES.BRL, scheduledAt) };
     invoices.push({ ...base, initiatedBy: "worker", stablecoin: "USDC", status: "pending_approval", quoteRate: FALLBACK_RATES.BRL, invoiceHash: invoiceHash(base), history: [{ status: "pending_approval", at: iso(daysAgo(0, 7)), by: `worker:${w.id}` }], createdAt: iso(daysAgo(0, 7)) });
   }
   {
     const w = byId.wrk_eun;
-    const base = { id: `inv_${hex(8)}`, orgId: ORG_ACME, workerId: w.id, amount: SALARY.wrk_eun, currency: w.localCurrency, scheduledAt: iso(daysAgo(1, 9)), memo: "Monthly salary" };
+    const id = `inv_${hex(8)}`;
+    const scheduledAt = iso(daysAgo(1, 9));
+    const base = { id, orgId: ORG_ACME, workerId: w.id, amount: SALARY.wrk_eun, currency: w.localCurrency, scheduledAt, memo: "Monthly salary", ...priceAtIssue("spread", FALLBACK_RATES.VND, scheduledAt) };
     invoices.push({ ...base, initiatedBy: "company", stablecoin: "USDC", status: "scheduled", blockedReason: "kyc", quoteRate: FALLBACK_RATES.VND, invoiceHash: invoiceHash(base), history: [{ status: "pending_approval", at: iso(daysAgo(3, 9)), by: `org:${ORG_ACME}` }, { status: "scheduled", at: iso(daysAgo(2, 9)), by: `worker:${w.id}` }], createdAt: iso(daysAgo(3, 9)) });
   }
   // Withdrawals.
@@ -179,8 +193,8 @@ export function generate(): Generated {
   for (const inv of invoices.filter((i) => i.status === "confirmed").slice(0, 10)) {
     const w = byId[inv.workerId];
     notifications.push(
-      { id: `ntf_${hex(8)}`, recipient: { type: "worker", id: w.id }, kind: "invoice_settled", title: `You received ${formatUsdc(inv.usdcAmount!, inv.stablecoin)}`, body: `${formatMoney(inv.amount, inv.currency)} settled on-chain.`, href: `/worker/invoices/${inv.id}`, read: n++ > 2, createdAt: inv.history.at(-1)!.at },
-      { id: `ntf_${hex(8)}`, recipient: { type: "org", id: inv.orgId }, kind: "invoice_settled", title: `Settled ${formatUsdc(inv.usdcAmount!, inv.stablecoin)} to ${w.name}`, body: `${formatMoney(inv.amount, inv.currency)} confirmed on-chain.`, href: `/company/invoices/${inv.id}`, read: n > 4, createdAt: inv.history.at(-1)!.at },
+      { id: `ntf_${hex(8)}`, recipient: { type: "worker", id: w.id }, kind: "invoice_settled", title: `You received ${formatUsdc(inv.usdcAmount!, inv.stablecoin, { exact: true })}`, body: `${formatMoney(inv.amount, inv.currency)} settled on-chain.`, href: `/worker/invoices/${inv.id}`, read: n++ > 2, createdAt: inv.history.at(-1)!.at },
+      { id: `ntf_${hex(8)}`, recipient: { type: "org", id: inv.orgId }, kind: "invoice_settled", title: `Settled ${formatUsdc(inv.usdcAmount!, inv.stablecoin, { exact: true })} to ${w.name}`, body: `${formatMoney(inv.amount, inv.currency)} confirmed on-chain.`, href: `/company/invoices/${inv.id}`, read: n > 4, createdAt: inv.history.at(-1)!.at },
     );
   }
   const pending = invoices.find((i) => i.status === "pending_approval")!;

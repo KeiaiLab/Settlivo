@@ -7,6 +7,7 @@ const ITEMS = [
   { href: "/company", label: "Dashboard" },
   { href: "/company/invoices", label: "Invoices" },
   { href: "/company/payroll", label: "Payroll" },
+  { href: "/company/wallets", label: "Wallets" },
   { href: "/company/workers", label: "Workers" },
   { href: "/company/approvals", label: "Approvals" },
 ];
@@ -22,7 +23,7 @@ export default async function CompanyLayout({ children }: { children: React.Reac
         items={ITEMS}
         recipient={{ type: "org", id: s.orgId }}
         name={s.name}
-        subtitle={persona?.subtitle ?? "Company"}
+        subtitle={`${persona?.subtitle.split(" · ")[0] ?? "Admin"} · ${orgs.find((o) => o.id === s.orgId)?.name ?? "Company"}`}
         extra={<OrgSwitcherClient orgs={orgs} activeId={s.orgId} />}
       />
       {children}

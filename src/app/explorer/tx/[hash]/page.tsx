@@ -9,6 +9,7 @@ import { chainMode } from "@/lib/chain";
 import { decodeMemo } from "@/lib/chain/memo";
 import { getTxByHash } from "@/lib/db/repo";
 import { formatDateTime } from "@/lib/format";
+import { getSession } from "@/lib/session";
 
 export default async function ExplorerTx({ params }: { params: Promise<{ hash: string }> }) {
   const { hash } = await params;
@@ -16,6 +17,8 @@ export default async function ExplorerTx({ params }: { params: Promise<{ hash: s
   const tx = await getTxByHash(hash);
   if (!tx) notFound();
   const memo = decodeMemo(tx.calldata);
+  const session = await getSession();
+  const invoiceBase = session?.role === "worker" ? "/worker/invoices" : "/company/invoices";
   const row = (k: string, v: React.ReactNode) => (
     <div className="grid grid-cols-1 gap-1 border-b border-border/60 py-2.5 text-sm last:border-0 sm:grid-cols-[180px_1fr]">
       <dt className="text-muted-foreground">{k}</dt>
@@ -51,7 +54,7 @@ export default async function ExplorerTx({ params }: { params: Promise<{ hash: s
             <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm">
               <div className="mb-1 text-sm font-medium text-emerald-300">Decoded Settlivo memo</div>
               <dl className="grid grid-cols-[120px_1fr] gap-y-1 text-xs">
-                <dt className="text-muted-foreground">Invoice</dt><dd className="font-mono"><Link href={`/company/invoices/${memo.invoiceId}`} className="hover:underline">{memo.invoiceId}</Link></dd>
+                <dt className="text-muted-foreground">Invoice</dt><dd className="font-mono"><Link href={`${invoiceBase}/${memo.invoiceId}`} className="hover:underline">{memo.invoiceId}</Link></dd>
                 <dt className="text-muted-foreground">Invoice hash</dt><dd className="font-mono break-all">{memo.invoiceHash}</dd>
               </dl>
             </div>

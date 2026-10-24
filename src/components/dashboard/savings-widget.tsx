@@ -20,7 +20,7 @@ export function SavingsWidget({ confirmed, period }: { confirmed: Invoice[]; per
     <Card className="bg-emerald-500/5 ring-emerald-500/25">
       <CardHeader>
         <CardTitle className="text-sm">Saved vs. bank wires · {period}</CardTitle>
-        <CardDescription>{s.count} settlements · <Money amount={s.totalUsd} currency="USD" dp={0} /> volume</CardDescription>
+        <CardDescription>{s.count} settlement{s.count === 1 ? "" : "s"} · <Money amount={s.totalUsd} currency="USD" dp={0} /> volume</CardDescription>
       </CardHeader>
       <CardContent className="grid grid-cols-3 gap-4 text-sm">
         <div><div className="text-muted-foreground">Fees saved</div><div className="text-xl font-semibold text-emerald-300"><Money amount={Math.max(0, s.saved)} currency="USD" dp={0} /></div></div>

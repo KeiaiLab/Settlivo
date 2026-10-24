@@ -6,6 +6,7 @@ import { invoiceHash } from "@/lib/chain/memo";
 import { getWorker, putInvoice, putPayrollRun } from "@/lib/db/repo";
 import { newId } from "@/lib/domain/ids";
 import type { Invoice, PayrollRun } from "@/lib/domain/types";
+import { parseRateMode, priceAtIssue } from "@/lib/fx/pricing";
 import { formatMoney } from "@/lib/format";
 import { scheduleInvoice } from "@/lib/scheduler";
 import { notify } from "@/lib/settlement/notify";
@@ -18,6 +19,8 @@ export async function createPayrollRun(formData: FormData) {
   const selected = formData.getAll("workerId").map(String);
   if (selected.length === 0) throw new Error("Select at least one worker");
   const rates = await currentRates();
+  // One pricing mode for the whole run (§5.2), default spread.
+  const rateMode = parseRateMode(formData.get("rateMode"));
   const now = new Date().toISOString();
   const runId = newId("run");
   const invoiceIds: string[] = [];
@@ -27,7 +30,7 @@ export async function createPayrollRun(formData: FormData) {
     if (!worker || !worker.orgIds.includes(s.orgId)) continue;
     const amount = Number(formData.get(`amount_${workerId}`));
     if (!Number.isFinite(amount) || amount <= 0) continue;
-    const base = { id: newId("inv"), orgId: s.orgId, workerId, amount, currency: worker.localCurrency, scheduledAt: now, memo: "Payroll run" };
+    const base = { id: newId("inv"), orgId: s.orgId, workerId, amount, currency: worker.localCurrency, scheduledAt: now, memo: "Payroll run", ...priceAtIssue(rateMode, rates.rates[worker.localCurrency], now) };
     const inv: Invoice = {
       ...base,
       initiatedBy: "company",

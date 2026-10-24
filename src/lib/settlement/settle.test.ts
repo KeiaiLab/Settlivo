@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import type { Invoice, Tx, Worker } from "@/lib/domain/types";
+import type { Invoice, Notification, Tx, Wallet, Worker } from "@/lib/domain/types";
 
-const db = { invoices: new Map<string, Invoice>(), workers: new Map<string, Worker>(), notifications: [] as unknown[] };
+const db = { invoices: new Map<string, Invoice>(), workers: new Map<string, Worker>(), notifications: [] as Notification[], wallets: [] as Wallet[] };
 vi.mock("@/lib/db/repo", () => ({
   getInvoice: async (id: string) => db.invoices.get(id) ?? null,
   putInvoice: async (inv: Invoice) => { db.invoices.set(inv.id, inv); },
   getWorker: async (id: string) => db.workers.get(id) ?? null,
+  putWorker: async (w: Worker) => { db.workers.set(w.id, w); },
+  listWalletsByOwner: async () => db.wallets,
   getOrg: async () => ({ id: "org_acme", name: "Acme Remote" }),
-  pushNotification: async (n: unknown) => { db.notifications.push(n); },
+  pushNotification: async (n: Notification) => { db.notifications.push(n); },
   putFxRates: async () => {},
   pushFxHistory: async () => {},
 }));
@@ -50,7 +52,7 @@ function invoice(over: Partial<Invoice> = {}): Invoice {
 }
 
 beforeEach(() => {
-  db.invoices.clear(); db.workers.clear(); db.notifications.length = 0;
+  db.invoices.clear(); db.workers.clear(); db.notifications.length = 0; db.wallets = [];
   vi.clearAllMocks();
   process.env.SCHEDULER = "workflow";
   const tx: Tx = { id: "tx_1", hash: "0xabc", from: "0xP", to: "0xPLATFORM", token: "USDC", amount: "1", status: "pending", calldata: "0x", memo: { invoiceId: "inv_1", invoiceHash: "" }, explorerUrl: "", createdAt: "" };
@@ -68,6 +70,18 @@ describe("settleInvoice", () => {
     expect(chain.transfer).not.toHaveBeenCalled();
   });
 
+  test("pays the default wallet entity and snapshots its id", async () => {
+    db.wallets = [
+      { id: "wal_a", owner: { type: "worker", id: "wrk_1" }, label: "Settlivo wallet", address: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", token: "USDC", kind: "platform", status: "active", isDefault: false, createdAt: "2026-07-01T00:00:00.000Z" },
+      { id: "wal_b", owner: { type: "worker", id: "wrk_1" }, label: "Cold", address: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", token: "USDC", kind: "external", status: "active", isDefault: true, createdAt: "2026-08-01T00:00:00.000Z" },
+    ];
+    db.workers.set("wrk_1", worker());
+    db.invoices.set("inv_1", invoice());
+    const inv = await settleInvoice("inv_1");
+    expect(chain.transfer).toHaveBeenCalledWith(expect.objectContaining({ to: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" }));
+    expect(inv.payoutWalletId).toBe("wal_b");
+  });
+
   test("pays the wallet and token active at send time", async () => {
     db.workers.set("wrk_1", worker({ payoutPrefs: { wallet: "external", externalAddress: "0xEXT", stablecoin: "USDT", displayCurrency: "KRW", cadence: "monthly" } }));
     db.invoices.set("inv_1", invoice());
@@ -83,6 +97,34 @@ describe("settleInvoice", () => {
     expect(inv.usdcAmount).toBe("2173.913043");
     expect(inv.executedRate).toBe(1380);
     expect(inv.txId).toBe("tx_1");
+    // Spread: applied = market, 0.5% fee on top for the company.
+    expect(inv.appliedRate).toBe(1380);
+    expect(inv.feeUsdc).toBe("10.869565");
+    expect(inv.lockExpired).toBeUndefined();
+  });
+
+  test("fixed-rate invoice settles at the locked rate while the lock holds", async () => {
+    db.workers.set("wrk_1", worker());
+    db.invoices.set("inv_1", invoice({ rateMode: "fixed", feeBps: 110, lockedRate: 1385, lockExpiresAt: "2999-01-01T00:00:00.000Z" }));
+    const inv = await settleInvoice("inv_1");
+    expect(inv.status).toBe("confirmed");
+    expect(chain.transfer).toHaveBeenCalledWith(expect.objectContaining({ amount: "2166.064981" }));
+    expect(inv).toMatchObject({ usdcAmount: "2166.064981", appliedRate: 1385, executedRate: 1380, feeUsdc: "23.826714" });
+    expect(inv.lockExpired).toBeUndefined();
+    expect(db.notifications.map((n) => n.kind)).not.toContain("invoice_rate_lock_expired");
+  });
+
+  test("expired lock falls back to the market rate and tells the company", async () => {
+    db.workers.set("wrk_1", worker());
+    db.invoices.set("inv_1", invoice({ rateMode: "fixed", feeBps: 110, lockedRate: 1385, lockExpiresAt: "2020-01-01T00:00:00.000Z" }));
+    const inv = await settleInvoice("inv_1");
+    expect(inv.status).toBe("confirmed");
+    expect(chain.transfer).toHaveBeenCalledWith(expect.objectContaining({ amount: "2173.913043" }));
+    expect(inv).toMatchObject({ usdcAmount: "2173.913043", appliedRate: 1380, executedRate: 1380, feeUsdc: "23.913043", lockExpired: true });
+    const n = db.notifications.find((x) => x.kind === "invoice_rate_lock_expired");
+    expect(n).toMatchObject({ recipient: { type: "org", id: "org_acme" }, title: "Rate lock expired, settled at market", href: "/company/invoices/inv_1" });
+    expect(n?.body).toContain("₩3,000,000");
+    expect(db.notifications.filter((x) => x.kind === "invoice_settled")).toHaveLength(2);
   });
 
   test("marks failed on chain error", async () => {

@@ -11,6 +11,7 @@ const COMPANY_ITEMS = [
   { href: "/company", label: "Dashboard" },
   { href: "/company/invoices", label: "Invoices" },
   { href: "/company/payroll", label: "Payroll" },
+  { href: "/company/wallets", label: "Wallets" },
   { href: "/company/workers", label: "Workers" },
   { href: "/company/approvals", label: "Approvals" },
 ];

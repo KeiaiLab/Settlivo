@@ -14,9 +14,13 @@ import { requireCompany } from "@/lib/session";
 
 export default async function CompanyHome() {
   const s = await requireCompany();
-  const { org, workers, invoices, workerMap } = await companyContext(s.orgId);
+  const { org, workers, invoices, workerMap, wallets } = await companyContext(s.orgId);
   if (!org) return <Page title="Organization not found"><p className="text-sm text-muted-foreground">Seed the database first.</p></Page>;
-  const balance = await getChain().getBalance(org.walletAddress, "USDC");
+  const chain = getChain();
+  // Treasury = every org wallet (§5.12); orgs seeded before wallets existed fall back to the treasury address.
+  const balances = wallets.length > 0 ? await Promise.all(wallets.map((w) => chain.getBalance(w.address, w.token))) : [await chain.getBalance(org.walletAddress, "USDC")];
+  const balance = balances.reduce((sum, b) => sum + Number(b), 0);
+  const walletCount = wallets.length || 1;
   const confirmedThisMonth = invoices.filter((i) => i.status === "confirmed" && thisMonth(i.history.at(-1)?.at ?? i.createdAt));
   const paidThisMonth = confirmedThisMonth.reduce((sum, i) => sum + Number(i.usdcAmount ?? 0), 0);
   const pendingApprovals = workers.filter((w) => w.pendingPayoutPrefs).length + invoices.filter((i) => i.status === "pending_approval" && i.initiatedBy === "worker").length;
@@ -35,14 +39,14 @@ export default async function CompanyHome() {
       }
     >
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Treasury balance" value={<Usdc value={balance} />} hint="Base · USDC" icon={<Wallet className="size-5" />} />
-        <StatCard label={`Paid in ${period}`} value={<Usdc value={paidThisMonth} />} hint={`${confirmedThisMonth.length} settlements`} icon={<ArrowUpRight className="size-5" />} />
+        <StatCard label="Treasury balance" value={<Usdc value={balance} />} hint={<><Link href="/company/wallets" className="hover:underline">{walletCount} {walletCount === 1 ? "wallet" : "wallets"}</Link> · Base</>} icon={<Wallet className="size-5" />} />
+        <StatCard label={`Paid in ${period}`} value={<Usdc value={paidThisMonth} />} hint={`${confirmedThisMonth.length} settlement${confirmedThisMonth.length === 1 ? "" : "s"}`} icon={<ArrowUpRight className="size-5" />} />
         <StatCard label="In flight" value={inFlight.length} hint="scheduled or settling" icon={<Clock className="size-5" />} />
         <StatCard label="Workers" value={workers.length} hint={`${workers.filter((w) => w.kyc.status === "verified").length} verified`} icon={<Users className="size-5" />} />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="min-w-0 lg:col-span-2">
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle className="text-sm">Recent invoices</CardTitle>
@@ -53,7 +57,7 @@ export default async function CompanyHome() {
             </CardContent>
           </Card>
         </div>
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <SavingsWidget confirmed={confirmedThisMonth} period={period} />
           <Card>
             <CardHeader className="flex-row items-center justify-between">
@@ -63,7 +67,7 @@ export default async function CompanyHome() {
             <CardContent className="space-y-2 text-sm">
               {inFlight.filter((i) => i.blockedReason).map((i) => (
                 <Link key={i.id} href={`/company/invoices/${i.id}`} className="flex items-center justify-between rounded-md border border-orange-500/30 bg-orange-500/5 px-3 py-2 hover:bg-orange-500/10">
-                  <span>{workerMap[i.workerId]?.name} · KYC pending</span><StatusBadge status="blocked" />
+                  <span>{workerMap[i.workerId]?.name} · {workerMap[i.workerId]?.kyc.status === "verified" ? "verified, retry to settle" : "KYC pending"}</span><StatusBadge status="blocked" />
                 </Link>
               ))}
               {workers.filter((w) => w.pendingPayoutPrefs).map((w) => (

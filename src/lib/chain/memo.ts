@@ -12,10 +12,13 @@ const TRANSFER_CALLDATA_HEX_LEN = 2 + 68 * 2; // "0x" + selector(4) + to(32) + a
 
 type HashableInvoice = Pick<
   Invoice,
-  "id" | "orgId" | "workerId" | "amount" | "currency" | "scheduledAt" | "memo"
+  "id" | "orgId" | "workerId" | "amount" | "currency" | "scheduledAt" | "memo" | "rateMode" | "lockedRate"
 >;
 
-/** sha256 hex of the canonical invoice JSON (fixed key order). */
+/**
+ * sha256 hex of the canonical invoice JSON (fixed key order). The pricing mode and, for fixed invoices,
+ * the locked rate are part of the commitment; records without them hash as spread with no lock.
+ */
 export function invoiceHash(inv: HashableInvoice): string {
   const canonical = JSON.stringify({
     id: inv.id,
@@ -25,6 +28,8 @@ export function invoiceHash(inv: HashableInvoice): string {
     currency: inv.currency,
     scheduledAt: inv.scheduledAt,
     memo: inv.memo,
+    rateMode: inv.rateMode ?? "spread",
+    lockedRate: inv.lockedRate ?? null,
   });
   return createHash("sha256").update(canonical).digest("hex");
 }

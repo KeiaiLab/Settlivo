@@ -3,6 +3,7 @@ import { Page } from "@/components/shell/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { createPayrollRun } from "@/lib/actions/payroll";
 import { listPayrollRunsByOrg } from "@/lib/db/repo";
@@ -20,7 +21,7 @@ export default async function PayrollPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-sm">New payroll run</CardTitle>
-            <CardDescription>Amounts are prefilled from each worker&apos;s last confirmed invoice. Rates are locked at send time.</CardDescription>
+            <CardDescription>Amounts are prefilled from each worker&apos;s last confirmed invoice. The rate option applies to every invoice in the run.</CardDescription>
           </CardHeader>
           <CardContent>
             <form action={createPayrollRun} className="space-y-3">
@@ -42,6 +43,13 @@ export default async function PayrollPage() {
                   );
                 })}
               </ul>
+              <div className="grid gap-1.5 sm:max-w-sm">
+                <Label htmlFor="payrollRateMode">Rate</Label>
+                <select id="payrollRateMode" name="rateMode" defaultValue="spread" className="h-9 rounded-md border border-input bg-background px-3 text-sm">
+                  <option value="spread">Spread · market rate at send · 0.5% fee</option>
+                  <option value="fixed">Fixed · lock today&apos;s rate for 24 h · 1.1% fee</option>
+                </select>
+              </div>
               <div className="flex justify-end"><Button type="submit">Run payroll now</Button></div>
             </form>
           </CardContent>

@@ -8,6 +8,14 @@ import { Label } from "@/components/ui/label";
 import type { Worker } from "@/lib/domain/types";
 
 type Step = "identity" | "address" | "tax";
+const SAMPLE_ADDRESS: Record<string, { street: string; city: string }> = {
+  KR: { street: "12 Teheran-ro, Gangnam-gu", city: "Seoul" },
+  VN: { street: "22 Nguyen Hue, District 1", city: "Ho Chi Minh City" },
+  PH: { street: "8 Ayala Avenue, Makati", city: "Manila" },
+  BR: { street: "Av. Paulista 1578", city: "São Paulo" },
+  PL: { street: "ul. Marszałkowska 84", city: "Warsaw" },
+};
+
 const STEPS: { key: Step; title: string; desc: string }[] = [
   { key: "identity", title: "Identity document", desc: "Passport or national ID. We check it against sanctions and PEP lists." },
   { key: "address", title: "Residential address", desc: "Used for tax residency and to match your bank account." },
@@ -72,8 +80,8 @@ export function KycWizard({ worker, onStep, onFinish }: { worker: Worker; onStep
           )}
           {current.key === "address" && (
             <div className="grid gap-3">
-              <div className="grid gap-1.5"><Label>Street address</Label><Input defaultValue="12 Teheran-ro, Gangnam-gu" /></div>
-              <div className="grid grid-cols-2 gap-3"><div className="grid gap-1.5"><Label>City</Label><Input defaultValue="Seoul" /></div><div className="grid gap-1.5"><Label>Country</Label><Input defaultValue={worker.country} /></div></div>
+              <div className="grid gap-1.5"><Label>Street address</Label><Input defaultValue={(SAMPLE_ADDRESS[worker.country] ?? { street: "1 Main Street" }).street} /></div>
+              <div className="grid grid-cols-2 gap-3"><div className="grid gap-1.5"><Label>City</Label><Input defaultValue={(SAMPLE_ADDRESS[worker.country] ?? { city: "" }).city} /></div><div className="grid gap-1.5"><Label>Country</Label><Input defaultValue={worker.country} /></div></div>
             </div>
           )}
           {current.key === "tax" && (

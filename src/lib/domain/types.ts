@@ -10,7 +10,9 @@ export interface Org {
   country: string;
   currency: Currency;
   kybStatus: "verified" | "pending";
+  /** Address of the default wallet (kept in sync with `defaultWalletId`, §5.12). */
   walletAddress: string;
+  defaultWalletId?: string;
   usdcBalance: string; // simulated, 6dp string
   createdAt: string;
 }
@@ -24,10 +26,21 @@ export interface BankAccount {
 export interface PayoutPrefs {
   wallet: "platform" | "external";
   externalAddress?: string;
+  /** Wallet entity that receives payouts (§5.12); `wallet`/`externalAddress` describe it for older records. */
+  walletId?: string;
   stablecoin: Stablecoin;
   displayCurrency: Currency;
   cadence: "monthly" | "biweekly" | "per_invoice";
   bankAccount?: BankAccount;
+}
+
+/** One entry per organisation the worker has ever belonged to (§5.11). */
+export interface Membership {
+  orgId: string;
+  status: "active" | "offboarding" | "offboarded";
+  joinedAt: string;
+  leftAt?: string;
+  finalInvoiceId?: string;
 }
 
 export interface Worker {
@@ -37,7 +50,10 @@ export interface Worker {
   country: string;
   localCurrency: Currency;
   avatarInitials: string;
+  /** Derived: org ids whose membership is not `offboarded`. */
   orgIds: string[];
+  /** Missing on records written before §5.11; `memberships()` derives it from `orgIds`. */
+  memberships?: Membership[];
   kyc: {
     status: KycStatus;
     steps: { identity: boolean; address: boolean; tax: boolean };
@@ -80,10 +96,26 @@ export interface Invoice {
   quoteRate: number;
   executedRate?: number;
   usdcAmount?: string;
+  /** FX pricing model (§5.2); undefined on records written before pricing modes and means `spread`. */
+  rateMode?: "spread" | "fixed";
+  /** Settlement fee charged to the company, in basis points: 50 for spread, 110 for fixed. */
+  feeBps?: number;
+  /** fixed only: the rate frozen at issue (= quoteRate). */
+  lockedRate?: number;
+  /** fixed only: ISO; the lock holds until scheduledAt + 24 h. */
+  lockExpiresAt?: string;
+  /** Rate actually used to compute usdcAmount at settlement. */
+  appliedRate?: number;
+  /** 6-dp fee charged to the company on top of usdcAmount. */
+  feeUsdc?: string;
+  /** fixed invoice settled after the lock window (fell back to the market rate). */
+  lockExpired?: boolean;
   txId?: string;
   invoiceHash: string;
   runId?: string;
   payrollRunId?: string;
+  /** Worker wallet that was (or will be) paid, snapshotted at settlement. */
+  payoutWalletId?: string;
   error?: string;
   rejectReason?: string;
   history: InvoiceHistoryEntry[];
@@ -138,11 +170,18 @@ export type NotificationKind =
   | "invoice_settled"
   | "invoice_failed"
   | "invoice_blocked"
+  | "invoice_rate_lock_expired"
   | "prefs_submitted"
   | "prefs_approved"
   | "prefs_rejected"
   | "withdrawal_completed"
-  | "kyc_verified";
+  | "kyc_verified"
+  | "worker_invited"
+  | "worker_offboarded"
+  | "wallet_added"
+  | "link_requested"
+  | "link_accepted"
+  | "link_declined";
 
 export interface Recipient {
   type: "org" | "worker";
@@ -158,6 +197,31 @@ export interface Notification {
   href: string;
   read: boolean;
   createdAt: string;
+}
+
+export interface Wallet {
+  id: string;
+  owner: Recipient;
+  label: string;
+  address: string;
+  token: Stablecoin;
+  kind: "platform" | "external";
+  status: "active" | "revoked";
+  isDefault: boolean;
+  createdAt: string;
+}
+
+/** A company asking a worker to link a wallet or bank account (§5.12). */
+export interface LinkRequest {
+  id: string;
+  orgId: string;
+  workerId: string;
+  kind: "wallet" | "bank";
+  message: string;
+  status: "pending" | "accepted" | "declined";
+  walletId?: string;
+  createdAt: string;
+  resolvedAt?: string;
 }
 
 export interface FxRates {

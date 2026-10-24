@@ -39,7 +39,7 @@ and [docs/demo-script.md](docs/demo-script.md) (what judges will click).
 | `src/lib/chain` | `ChainAdapter` interface; `simulated` (default) and `testnet` (viem/Base Sepolia); calldata memo codec |
 | `src/lib/settlement`, `src/lib/scheduler`, `src/workflows` | Settlement step, Workflow + tick schedulers, approval, retry |
 | `src/lib/seed` | Personas with fixed IDs (`org_acme`, `wrk_alice`, …) and deterministic history |
-| `src/lib/actions` | Server Actions (`"use server"` files may only export async functions) |
+| `src/lib/actions` | Server Actions (`"use server"` files may only export async functions); `workers.ts` and `wallets.ts` hold the worker lifecycle (register / remove / offboard, link requests) and wallet actions |
 | `src/lib/queries` | Page data loaders |
 | `src/components/ui` | shadcn (base-nova) primitives; `shell`, `invoices`, `worker`, `dashboard`, `payroll`, `approvals` are app components |
 | `src/app` | Routes: `(company)/company/*`, `(worker)/worker/*`, `login`, `notifications`, `explorer/tx/[hash]`, `api/*` |
@@ -51,7 +51,7 @@ import chain or the workflow silently disappears from the build.
 
 ## Conventions
 
-- IDs: `prefix_` + 8-char nanoid (`org`, `wrk`, `inv`, `tx`, `run`, `wd`, `ntf`).
+- IDs: `prefix_` + 8-char nanoid (`org`, `wrk`, `inv`, `tx`, `run`, `wd`, `ntf`, `wal`, `lrq`).
 - Money: USDC amounts are 6-dp strings, never floats in storage. Local-currency
   amounts are numbers.
 - Render amounts only through `components/ui/money.tsx` (`Money`, `Usdc`) or
@@ -103,7 +103,8 @@ a demo-critical path run `npm run e2e` (Playwright, uses `KV_MODE=file`).
 
 Invoice lifecycle (spec §5.1–5.4), payroll run (§5.5), on-chain memo
 verification (§5.6), withdraw (§5.7), KYC block + retry (§5.8), org switcher
-(§5.10). The demo script exercises all of them in order.
+(§5.10), worker lifecycle and wallets (§5.11–5.12). The demo script exercises
+all of them in order.
 
 ## Known gaps
 
