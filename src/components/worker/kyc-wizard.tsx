@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, FileUp, Loader2 } from "lucide-react";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +20,9 @@ export function KycWizard({ worker, onStep, onFinish }: { worker: Worker; onStep
   const current = STEPS.find((s) => !worker.kyc.steps[s.key]);
   const reviewing = allDone && worker.kyc.status !== "verified";
   const finishRef = useRef(onFinish);
-  finishRef.current = onFinish;
+  useEffect(() => {
+    finishRef.current = onFinish;
+  });
 
   useEffect(() => {
     if (!reviewing) return;

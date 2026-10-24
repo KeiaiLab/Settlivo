@@ -20,7 +20,7 @@ export default async function PayrollPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-sm">New payroll run</CardTitle>
-            <CardDescription>Amounts are prefilled from each worker's last confirmed invoice. Rates are locked at send time.</CardDescription>
+            <CardDescription>Amounts are prefilled from each worker&apos;s last confirmed invoice. Rates are locked at send time.</CardDescription>
           </CardHeader>
           <CardContent>
             <form action={createPayrollRun} className="space-y-3">

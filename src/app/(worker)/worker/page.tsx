@@ -32,8 +32,8 @@ export default async function WorkerHome() {
             <CardDescription>{formatUsdc(balance, worker.payoutPrefs.stablecoin)} · {rates.rates[worker.localCurrency].toLocaleString("en-US", { maximumFractionDigits: 2 })} {worker.localCurrency}/USD {rates.source === "fallback" && "· fallback rate"}</CardDescription>
           </CardHeader>
           <CardContent className="flex gap-2">
-            <Button render={<Link href="/worker/withdraw" />}><ArrowDownToLine /> Withdraw to {worker.localCurrency}</Button>
-            <Button variant="outline" render={<Link href="/worker/request" />}>Request payment</Button>
+            <Button nativeButton={false} render={<Link href="/worker/withdraw" />}><ArrowDownToLine /> Withdraw to {worker.localCurrency}</Button>
+            <Button variant="outline" nativeButton={false} render={<Link href="/worker/request" />}>Request payment</Button>
           </CardContent>
         </Card>
         <Card>
@@ -58,7 +58,7 @@ export default async function WorkerHome() {
               <Card key={inv.id}>
                 <CardHeader>
                   <CardTitle className="text-sm"><Link href={`/worker/invoices/${inv.id}`} className="hover:underline">{orgMap[inv.orgId]?.name}</Link> · <Money amount={inv.amount} currency={inv.currency} /></CardTitle>
-                  <CardDescription>{inv.memo} · settles {formatDateTime(inv.scheduledAt)} · ≈ {(inv.amount / inv.quoteRate).toLocaleString("en-US", { maximumFractionDigits: 2 })} {inv.stablecoin} at today's rate</CardDescription>
+                  <CardDescription>{inv.memo} · settles {formatDateTime(inv.scheduledAt)} · ≈ {(inv.amount / inv.quoteRate).toLocaleString("en-US", { maximumFractionDigits: 2 })} {inv.stablecoin} at today&apos;s rate</CardDescription>
                 </CardHeader>
                 <CardContent><ApproveButtons onDecide={async (a, r) => { "use server"; await approveMyInvoice(inv.id, a, r); }} /></CardContent>
               </Card>

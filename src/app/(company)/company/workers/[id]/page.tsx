@@ -17,7 +17,7 @@ export default async function WorkerProfile({ params }: { params: Promise<{ id: 
   const { invoices, workerMap } = await companyContext(s.orgId);
   const mine = invoices.filter((i) => i.workerId === id);
   return (
-    <Page title={w.name} description={`${w.email} · ${w.country} · ${w.localCurrency}`} actions={<Button render={<Link href={`/company/invoices/new?worker=${w.id}`} />}>New invoice</Button>}>
+    <Page title={w.name} description={`${w.email} · ${w.country} · ${w.localCurrency}`} actions={<Button nativeButton={false} render={<Link href={`/company/invoices/new?worker=${w.id}`} />}>New invoice</Button>}>
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader><CardTitle className="text-sm">Payout settings</CardTitle></CardHeader>

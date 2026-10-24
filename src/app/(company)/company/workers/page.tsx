@@ -23,7 +23,7 @@ export default async function WorkersPage() {
                 <TableCell className="text-muted-foreground">{w.payoutPrefs.stablecoin} · {w.payoutPrefs.wallet === "external" ? "external" : "Settlivo"} · {w.payoutPrefs.cadence.replace("_", " ")}</TableCell>
                 <TableCell><StatusBadge status={w.kyc.status === "verified" ? "verified" : "pending"} /></TableCell>
                 <TableCell className="text-right tabular-nums">{invoices.filter((i) => i.workerId === w.id && i.status === "confirmed").length}</TableCell>
-                <TableCell className="text-right"><Button size="xs" variant="outline" render={<Link href={`/company/invoices/new?worker=${w.id}`} />}>Pay</Button></TableCell>
+                <TableCell className="text-right"><Button size="xs" variant="outline" nativeButton={false} render={<Link href={`/company/invoices/new?worker=${w.id}`} />}>Pay</Button></TableCell>
               </TableRow>
             ))}
           </TableBody>

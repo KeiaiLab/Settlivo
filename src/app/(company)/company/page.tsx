@@ -29,8 +29,8 @@ export default async function CompanyHome() {
       description={`${org.country} · KYB ${org.kybStatus} · treasury ${org.walletAddress.slice(0, 10)}…`}
       actions={
         <>
-          <Button variant="outline" render={<Link href="/company/payroll" />}>Run payroll</Button>
-          <Button render={<Link href="/company/invoices/new" />}>New invoice <ArrowUpRight /></Button>
+          <Button variant="outline" nativeButton={false} render={<Link href="/company/payroll" />}>Run payroll</Button>
+          <Button nativeButton={false} render={<Link href="/company/invoices/new" />}>New invoice <ArrowUpRight /></Button>
         </>
       }
     >

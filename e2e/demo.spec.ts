@@ -54,9 +54,9 @@ test("2. company dashboard shows treasury, savings and pending items", async () 
 
 test("3. company issues an invoice for Alice scheduled ~1 minute out", async () => {
   await page.goto("/company/invoices/new");
-  await page.getByLabel("Worker").selectOption("wrk_alice");
+  await page.getByLabel("Worker", { exact: true }).selectOption("wrk_alice");
   await page.getByLabel("Amount (local currency)").fill("4200000");
-  await page.getByLabel("Currency").selectOption("KRW");
+  await page.getByLabel("Currency", { exact: true }).selectOption("KRW");
   const d = new Date(Date.now() + 75_000);
   d.setSeconds(0, 0);
   const pad = (n: number) => String(n).padStart(2, "0");

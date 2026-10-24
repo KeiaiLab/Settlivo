@@ -33,9 +33,9 @@ export async function NotificationBell({ recipient }: { recipient: Recipient }) 
           </Link>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {items.length === 0 && <div className="px-2 py-6 text-center text-sm text-muted-foreground">You're all caught up.</div>}
+        {items.length === 0 && <div className="px-2 py-6 text-center text-sm text-muted-foreground">You&apos;re all caught up.</div>}
         {items.map((n) => (
-          <DropdownMenuItem key={n.id} render={<Link href={n.href} />} className="flex flex-col items-start gap-0.5 py-2">
+          <DropdownMenuItem key={n.id} nativeButton={false} render={<Link href={n.href} />} className="flex flex-col items-start gap-0.5 py-2">
             <span className="flex w-full items-center gap-2 text-sm">
               {!n.read && <span className="size-1.5 shrink-0 rounded-full bg-emerald-400" />}
               <span className="truncate">{n.title}</span>

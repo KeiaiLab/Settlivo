@@ -11,9 +11,9 @@ export function KycBanner({ worker }: { worker: Worker }) {
       <ShieldAlert className="size-5 text-orange-300" />
       <div className="flex-1">
         <div className="font-medium">Finish verification to receive payouts</div>
-        <div className="text-xs text-muted-foreground">{done} of 3 steps complete. Scheduled invoices stay on hold until you're verified.</div>
+        <div className="text-xs text-muted-foreground">{done} of 3 steps complete. Scheduled invoices stay on hold until you&apos;re verified.</div>
       </div>
-      <Button size="sm" render={<Link href="/worker/onboarding" />}>Continue</Button>
+      <Button size="sm" nativeButton={false} render={<Link href="/worker/onboarding" />}>Continue</Button>
     </div>
   );
 }

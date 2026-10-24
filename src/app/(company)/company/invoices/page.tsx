@@ -21,7 +21,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
   const filter = FILTERS.find((x) => x.key === f) ?? FILTERS[0];
   const rows = invoices.filter((i) => filter.match(i.status));
   return (
-    <Page title="Invoices" description={`${invoices.length} total`} actions={<Button render={<Link href="/company/invoices/new" />}>New invoice</Button>}>
+    <Page title="Invoices" description={`${invoices.length} total`} actions={<Button nativeButton={false} render={<Link href="/company/invoices/new" />}>New invoice</Button>}>
       <div className="mb-3 flex gap-1">
         {FILTERS.map((x) => (
           <Link key={x.key} href={`/company/invoices?f=${x.key}`} className={`rounded-md px-3 py-1 text-sm ${x.key === filter.key ? "bg-muted" : "text-muted-foreground hover:text-foreground"}`}>{x.label}</Link>
