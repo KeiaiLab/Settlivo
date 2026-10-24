@@ -16,8 +16,8 @@ rate, workers cash out to local currency. Everything is simulated by default.
 Read first: [README.md](README.md) (pitch, stack, env), the design spec
 [docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md](docs/superpowers/specs/2026-10-24-settlivo-demo-mvp-design.md),
 [docs/demo-script.md](docs/demo-script.md) (what judges will click), and
-[docs/tutorial.md](docs/tutorial.md) (feature-by-feature verification guide; must
-agree with the spec like README and demo-script).
+[docs/tutorial.md](docs/tutorial.md) (10-minute core-feature guide; must agree with
+the spec like README and demo-script).
 
 ## Source of truth
 
